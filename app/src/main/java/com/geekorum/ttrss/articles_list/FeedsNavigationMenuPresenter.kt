@@ -92,7 +92,6 @@ class FeedsNavigationMenuPresenter(
                 null
             }
         }
-        val isMagazineFeed = navBackStackEntry?.destination?.hasRoute<NavRoutes.Magazine>() == true
 
         val account by accountViewModel.selectedAccount.collectAsStateWithLifecycle()
         val server by accountViewModel.selectedAccountHost.collectAsStateWithLifecycle()
@@ -118,13 +117,8 @@ class FeedsNavigationMenuPresenter(
                 FeedSection(
                     feeds,
                     selectedFeed = feeds.find { it.feed.id == currentFeedId }?.feed,
-                    isMagazineSelected = isMagazineFeed,
                     onFeedSelected = {
                         navigateToFeed(it)
-                        onNavigation()
-                    },
-                    onMagazineSelected = {
-                        navController.navigateToMagazine()
                         onNavigation()
                     },
                     onMarkFeedAsReadClick = feedsViewModel::markFeedAsRead

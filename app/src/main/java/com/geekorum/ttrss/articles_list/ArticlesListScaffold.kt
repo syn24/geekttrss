@@ -329,7 +329,7 @@ fun PreviewArticlesListScaffoldPhone() {
                 drawerState = drawerState,
                 topBar = {
                     TopAppBar(
-                        title = { Text("Magazine") },
+                        title = { Text("All Articles") },
                         navigationIcon = {
                             IconButton(
                                 onClick = {

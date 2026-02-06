@@ -133,7 +133,6 @@ class CollectNewArticlesWorker @AssistedInject constructor(
      * maintain the contract around getLatestArticleId()
      * As the web api doesn't allow to sort by id, we sort by reverse date which is the closest approximation
      */
-    @Throws(ApiCallException::class, RemoteException::class, OperationApplicationException::class)
     private suspend fun collectNewArticlesGradually() = coroutineScope {
         Timber.i("Collecting new articles gradually for feed $feedId")
         val latestId = getLatestArticleId()
@@ -145,7 +144,9 @@ class CollectNewArticlesWorker @AssistedInject constructor(
             databaseService.runInTransaction {
                 insertArticles(articles)
             }
-            cacheArticlesImages(articles.map { it.article })
+            // Image caching disabled during sync for better performance
+            // Images will be loaded on-demand when articles are opened
+            // cacheArticlesImages(articles.map { it.article })
             offset += articles.size
             articles = getArticles(feedId, latestId, offset, includeAttachments = true, gradually = true)
         }

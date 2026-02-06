@@ -224,8 +224,6 @@ fun ArticlesSearchScreen(
 ) {
     val compactItemsInSmallScreens by activityViewModel.displayCompactItems.collectAsStateWithLifecycle()
     val displayCompactItems = compactItemsInSmallScreens
-            && (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact ||
-            windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact)
 
     val browserApplicationIcon by activityViewModel.browserIcon.collectAsStateWithLifecycle()
     Surface(Modifier.fillMaxSize()) {

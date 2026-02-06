@@ -22,7 +22,7 @@
 
 -->
 <resources>
-    <string name="app_name" translatable="false">Geekttrss</string>
+    <string name="app_name" translatable="false">GeekTTRSS</string>
 
     <string name="path_star_mask_filled" translatable="false">M0,24 L24,24 L24,0 L0,0 Z</string>
     <string name="path_star_mask_empty" translatable="false">M0,24 L24,24 L24,24 L0,24 Z</string>
@@ -93,8 +93,6 @@
     <string name="lbl_install_complete">Installation complete</string>
     <string name="lbl_other">Other state</string>
 
-    <!-- Magazine fragment  -->
-    <string name="title_magazine">Magazine</string>
 
     <!-- article list items -->
     <string name="mark_as_read">Mark as read</string>

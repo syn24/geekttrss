@@ -161,19 +161,11 @@ fun AccountHeader(login: String, server: String) {
 @Composable
 fun FeedSection(
     feeds: List<FeedWithFavIcon>,
-    isMagazineSelected: Boolean,
     selectedFeed: Feed?,
-    onMagazineSelected: () -> Unit,
     onFeedSelected: (Feed) -> Unit,
     onMarkFeedAsReadClick: (Feed) -> Unit,
 ) {
     SectionLabel(stringResource(R.string.title_feeds_menu))
-    NavigationItem(stringResource(R.string.title_magazine),
-        icon = { Icon(AppTheme3.Icons.Newspaper, contentDescription = null) },
-        selected = isMagazineSelected,
-        selectedForAction = false,
-        onLongClick = null,
-        onClick = onMagazineSelected)
     for (feedWithFavIcon in feeds) {
         Box {
             var displayDropdownMenu by remember { mutableStateOf(false) }
@@ -414,20 +406,11 @@ fun PreviewFeedListNavigationMenu() {
                         var selectedFeed by remember {
                             mutableStateOf<Feed?>(null)
                         }
-                        var isMagazineSelected by remember {
-                            mutableStateOf(true)
-                        }
                         FeedSection(
                             feeds,
                             selectedFeed = selectedFeed,
                             onFeedSelected = {
                                 selectedFeed = it
-                                isMagazineSelected = false
-                            },
-                            isMagazineSelected = isMagazineSelected,
-                            onMagazineSelected = {
-                                selectedFeed = null
-                                isMagazineSelected = true
                             },
                             onMarkFeedAsReadClick = { }
                         )

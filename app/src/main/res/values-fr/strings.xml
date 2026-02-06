@@ -72,7 +72,6 @@
     <string name="lbl_failed_to_install">Échec de l\'installation</string>
     <string name="lbl_install_complete">Installation terminée</string>
     <string name="lbl_other">Autre état</string>
-    <string name="title_magazine">Magazine</string>
     <string name="mark_as_read">Marquer comme lu</string>
     <string name="mark_as_unread">Marquer comme non lu</string>
     <string name="feed_icon_content_description">Icone du flux</string>

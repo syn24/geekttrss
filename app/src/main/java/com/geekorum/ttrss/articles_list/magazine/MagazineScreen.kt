@@ -103,8 +103,6 @@ fun MagazineScreen(
 
         val compactItemsInSmallScreens by activityViewModel.displayCompactItems.collectAsStateWithLifecycle()
         val displayCompactItems = compactItemsInSmallScreens
-                && (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact ||
-                        windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact)
 
         ArticlesMagazine(
             viewModel = magazineViewModel,

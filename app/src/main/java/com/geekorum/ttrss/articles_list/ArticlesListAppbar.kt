@@ -33,6 +33,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
@@ -70,6 +71,7 @@ import com.geekorum.ttrss.ui.AppTheme3
 fun ArticlesListAppBar(
     title: @Composable () -> Unit,
     onSearchClick: () -> Unit,
+    markAsRead: () -> Unit,
     sortOrder: SortOrder,
     onSortOrderChange: (SortOrder) -> Unit,
     modifier: Modifier = Modifier,
@@ -89,6 +91,9 @@ fun ArticlesListAppBar(
             if (displaySearchButton) {
                 IconButton(onClick = onSearchClick) {
                     Icon(Icons.Default.Search, contentDescription = "search")
+                }
+                IconButton(onClick = markAsRead) {
+                    Icon(Icons.Default.Check, contentDescription = "Mark as read")
                 }
             }
             if (displaySortMenuButton) {
@@ -274,7 +279,8 @@ private fun PreviewArticlesListAppBar() {
                     },
                     sortOrder = sortOrder,
                     onSortOrderChange = { sortOrder = it },
-                    onSearchClick = {}
+                    onSearchClick = {},
+                    markAsRead = {}
                 )
             }
         ) {

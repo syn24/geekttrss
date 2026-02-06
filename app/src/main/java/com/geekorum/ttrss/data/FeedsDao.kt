@@ -124,59 +124,86 @@ abstract class FeedsDao {
     }
 
     private suspend fun internalUpdateFeedsUnreadCount(feeds: Collection<Feed>) {
-        val feedsIds: List<Long> = feeds.map { it.id }
+        if (feeds.isEmpty()) return
+
+        val feedsIds = feeds.map { it.id }.toSet()
         val currentFeeds = getAllFeedsList()
-        val currentFeedsIds = currentFeeds.map { it.id }
-        val (toDelete, toUpdateDb) = currentFeeds.partition { it.id !in feedsIds }
-        val toUpdateDbIds = toUpdateDb.map { it.id }
-        val toUpdate = feeds.filter { it.id in toUpdateDbIds }
-        val toInsert = feeds.filter {
-            it.id !in currentFeedsIds
+        val currentFeedsIds = currentFeeds.map { it.id }.toSet()
+
+        // Efficiently categorize feeds
+        val toInsert = feeds.filter { it.id !in currentFeedsIds }
+        val toUpdate = feeds.filter { it.id in currentFeedsIds }
+        val toSetZero = currentFeeds.filter { it.id !in feedsIds }
+
+        // Batch operations
+        if (toSetZero.isNotEmpty()) {
+            setFeedsUnreadCountTo0(toSetZero)
         }
-        // will be delete on next sync
-        setFeedsUnreadCountTo0(toDelete)
-        updateFeedsUnreadCount(toUpdate)
-        insertFeeds(toInsert)
+        if (toUpdate.isNotEmpty()) {
+            updateFeedsUnreadCount(toUpdate)
+        }
+        if (toInsert.isNotEmpty()) {
+            insertFeeds(toInsert)
+        }
     }
 
     private suspend fun updateFeedsUnreadCount(feeds: Collection<Feed>) {
-        feeds.forEach {
-            updateFeedUnreadCount(it.id, it.unreadCount)
+        // Batch updates to reduce transaction overhead
+        feeds.chunked(100).forEach { batch ->
+            batch.forEach {
+                updateFeedUnreadCount(it.id, it.unreadCount)
+            }
         }
     }
 
     private suspend fun setFeedsUnreadCountTo0(feeds: List<Feed>) {
-        feeds.forEach {
-            updateFeedUnreadCount(it.id, 0)
+        // Batch updates to reduce transaction overhead
+        feeds.chunked(100).forEach { batch ->
+            batch.forEach {
+                updateFeedUnreadCount(it.id, 0)
+            }
         }
     }
 
     private suspend fun internalUpdateCategoriesUnreadCount(categories: Collection<Category>) {
-        val categoriesIds: List<Long> = categories.map { it.id }
-        val currentCategories = getAllCategoriesList()
-        val currentCategoriesIds = currentCategories.map { it.id }
-        val (toDelete, toUpdateDb) = currentCategories.partition { it.id !in categoriesIds }
-        val toUpdateDbIds = toUpdateDb.map { it.id }
-        val toUpdate = categories.filter { it.id in toUpdateDbIds }
-        val toInsert = categories.filter {
-            it.id !in currentCategoriesIds
-        }
+        if (categories.isEmpty()) return
 
-        // will be delete on next sync
-        setCategoriesUnreadCountTo0(toDelete)
-        updateCategoriesUnreadCount(toUpdate)
-        insertCategories(toInsert)
+        val categoriesIds = categories.map { it.id }.toSet()
+        val currentCategories = getAllCategoriesList()
+        val currentCategoriesIds = currentCategories.map { it.id }.toSet()
+
+        // Efficiently categorize categories
+        val toInsert = categories.filter { it.id !in currentCategoriesIds }
+        val toUpdate = categories.filter { it.id in currentCategoriesIds }
+        val toSetZero = currentCategories.filter { it.id !in categoriesIds }
+
+        // Batch operations
+        if (toSetZero.isNotEmpty()) {
+            setCategoriesUnreadCountTo0(toSetZero)
+        }
+        if (toUpdate.isNotEmpty()) {
+            updateCategoriesUnreadCount(toUpdate)
+        }
+        if (toInsert.isNotEmpty()) {
+            insertCategories(toInsert)
+        }
     }
 
     private suspend fun updateCategoriesUnreadCount(categories: Collection<Category>) {
-        categories.forEach {
-            updateCategoryUnreadCount(it.id, it.unreadCount)
+        // Batch updates to reduce transaction overhead
+        categories.chunked(100).forEach { batch ->
+            batch.forEach {
+                updateCategoryUnreadCount(it.id, it.unreadCount)
+            }
         }
     }
 
     private suspend fun setCategoriesUnreadCountTo0(categories: Collection<Category>) {
-        categories.forEach {
-            updateCategoryUnreadCount(it.id, 0)
+        // Batch updates to reduce transaction overhead
+        categories.chunked(100).forEach { batch ->
+            batch.forEach {
+                updateCategoryUnreadCount(it.id, 0)
+            }
         }
     }
 }

@@ -173,7 +173,7 @@ data class ListResponsePayload<T>(
 
     @Transient
     val result: List<T>
-        get() = (content as ListContent<T>).list
+        get() = (content as? ListContent<T>)?.list ?: emptyList()
 
     internal class OwnSerializer<E>(
         private val contentSerializer: KSerializer<E>

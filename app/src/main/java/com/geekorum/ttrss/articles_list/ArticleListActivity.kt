@@ -119,11 +119,6 @@ class ArticleListActivity : SessionActivity() {
             }
 
             val navBackStackEntry by navController.currentBackStackEntryFlow.collectAsStateWithLifecycle(null)
-            if (navBackStackEntry?.destination?.hasRoute<NavRoutes.Magazine>() == true) {
-                LaunchedEffect(Unit) {
-                    appReviewViewModel.launchReview(this@ArticleListActivity)
-                }
-            }
 
             AppTheme3 {
                 val coroutineScope = rememberCoroutineScope()
@@ -203,6 +198,7 @@ class ArticleListActivity : SessionActivity() {
             activity = this,
             activityViewModel = activityViewModel,
             tagsViewModel = tagsViewModel,
+            feedsViewModel = feedsViewModel,
             navController = navController
         )
     }

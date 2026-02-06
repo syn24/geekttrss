@@ -166,7 +166,7 @@ private open class BackgroundJobManagerImpl internal constructor(
                 .addTag(WM_TAG_REFRESH_FEED)
                 .build()
 
-        inputData = UpdateArticleStatusWorker.getInputData(account, feedId)
+        inputData = UpdateArticleStatusWorker.getInputData(account, feedId, 200) // Reduced from 500 for faster refresh
         val updateStatusRequest = OneTimeWorkRequestBuilder<UpdateArticleStatusWorker>()
                 .setConstraints(constraints)
                 .setInputData(inputData)
@@ -174,9 +174,11 @@ private open class BackgroundJobManagerImpl internal constructor(
                 .build()
 
         val workName = "refresh-feed-$feedId"
+        // Optimize: Run SyncFeeds and CollectNewArticles in parallel since they're independent
+        // Only UpdateStatus needs to wait for CollectNewArticles to complete
         WorkManager.getInstance(context)
-                .beginUniqueWork(workName, ExistingWorkPolicy.KEEP, listOf(sendTransactionsRequest, syncFeeds))
-                .then(collectNewArticleRequest)
+                .beginUniqueWork(workName, ExistingWorkPolicy.KEEP, sendTransactionsRequest)
+                .then(listOf(syncFeeds, collectNewArticleRequest)) // Run in parallel
                 .then(updateStatusRequest)
                 .enqueue().await()
         return workName

@@ -60,10 +60,13 @@ class FeedsViewModel @Inject constructor(
 
     val feeds = onlyUnread.flatMapLatest { onlyUnread ->
         if (onlyUnread) feedsRepository.allUnreadFeeds else feedsRepository.allFeeds
-    }.autoRefreshed()
+    }.distinctUntilChanged()
+        .autoRefreshed()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var refreshFeedsJob: Job? = null
+    private var lastRefreshTime: Long = 0
+    private val minRefreshInterval = 60_000L // Minimum 1 minute between refreshes
 
     val feedsForCategory = selectedCategory.filterNotNull().flatMapLatest(this::getFeedsForCategory)
 
@@ -79,7 +82,8 @@ class FeedsViewModel @Inject constructor(
             feedsRepository.allUnreadCategories
         else
             feedsRepository.allCategories
-    }.autoRefreshed()
+    }.distinctUntilChanged()
+        .autoRefreshed()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setOnlyUnread(onlyUnread: Boolean) {
@@ -92,6 +96,13 @@ class FeedsViewModel @Inject constructor(
 
     @Throws(ApiCallException::class)
     private suspend fun refreshFeeds() = coroutineScope {
+        val currentTime = System.currentTimeMillis()
+        // Throttle API calls to prevent too frequent updates
+        if (currentTime - lastRefreshTime < minRefreshInterval) {
+            return@coroutineScope
+        }
+        lastRefreshTime = currentTime
+
         withContext(dispatchers.io) {
             val feeds = async { apiService.getFeeds() }
             val categories = async { apiService.getCategories() }
@@ -105,7 +116,7 @@ class FeedsViewModel @Inject constructor(
                 try {
                     while(isActive) {
                         refreshFeeds()
-                        delay(30_000)
+                        delay(300_000) // 5 minutes instead of 30 seconds for better performance
                     }
                 } catch (e: ApiCallException) {
                     Timber.w(e, "Unable to refresh feeds and categories")

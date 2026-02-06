@@ -297,28 +297,6 @@ fun SettingsWideNavigationRailItem(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun MagazineWideNavigationRailItem(
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    railExpanded: Boolean = false,
-) {
-    WideNavigationRailItem(
-        modifier = modifier,
-        railExpanded = railExpanded,
-        icon = {
-            val icon = if (selected) Icons.Filled.Newspaper else Icons.Outlined.Newspaper
-            Icon(icon,
-                contentDescription = stringResource(R.string.title_magazine)
-            )
-        },
-        label = { RailItemLabel(stringResource(R.string.title_magazine), railExpanded) },
-        selected = selected,
-        onClick = onClick,
-    )
-}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -988,9 +966,7 @@ private fun QuickFeedAccessForPreview(
     selectedItem: Int,
     onItemClick: (Int) -> Unit
 ) {
-    val fakeMagazineId = 42L
     val feeds = listOf(
-        Feed(id = fakeMagazineId),
         Feed(
             id = Feed.FEED_ID_ALL_ARTICLES,
             title = "All articles",
@@ -1006,19 +982,11 @@ private fun QuickFeedAccessForPreview(
         )
     )
     feeds.forEachIndexed { index, item ->
-        if (index == 0) {
-            MagazineWideNavigationRailItem(
-                selected = selectedItem == index,
-                railExpanded = railExpanded,
-                onClick = { onItemClick(index) }
-            )
-        } else {
-            VirtualFeedWideNavigationRailItem(
-                item,
-                selected = selectedItem == index,
-                railExpanded = railExpanded,
-                onClick = { onItemClick(index) }
-            )
-        }
+        VirtualFeedWideNavigationRailItem(
+            item,
+            selected = selectedItem == index,
+            railExpanded = railExpanded,
+            onClick = { onItemClick(index) }
+        )
     }
 }

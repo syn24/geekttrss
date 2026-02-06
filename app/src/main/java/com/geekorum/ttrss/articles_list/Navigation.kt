@@ -45,7 +45,6 @@ import androidx.navigation.navOptions
 import androidx.navigation.toRoute
 import com.geekorum.ttrss.R
 import com.geekorum.ttrss.article_details.ArticleDetailActivity
-import com.geekorum.ttrss.articles_list.magazine.MagazineScreen
 import com.geekorum.ttrss.articles_list.search.ArticlesSearchScreen
 import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.settings.SettingsActivity
@@ -53,8 +52,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 object NavRoutes {
-    @Serializable
-    object Magazine
 
     @Serializable
     data class ArticlesList(
@@ -75,7 +72,6 @@ object NavRoutes {
     )
 
     fun getLabelForDestination(context: Context, destination: NavDestination) = when {
-        destination.hasRoute<Magazine>() -> context.getString(R.string.title_magazine)
         destination.hasRoute<ArticlesList>() -> "{feed_name}"
         destination.hasRoute<ArticlesListByTag>() -> "#{tag}"
         else -> null
@@ -83,7 +79,6 @@ object NavRoutes {
 
     fun isTopLevelDestination(destination: NavDestination) = when {
         destination.hasRoute<Search>() -> true
-        destination.hasRoute<Magazine>() -> true
         destination.hasRoute<ArticlesList>() -> true
         destination.hasRoute<ArticlesListByTag>() -> true
         else -> false
@@ -106,11 +101,7 @@ fun ArticlesListNavHost(
     navController: NavHostController = rememberNavController(),
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
-    NavHost(navController = navController, startDestination = NavRoutes.Magazine) {
-        composable<NavRoutes.Magazine> {
-            MagazineScreen(activityViewModel = activityViewModel, windowSizeClass = windowSizeClass,
-                contentPadding = contentPadding)
-        }
+    NavHost(navController = navController, startDestination = NavRoutes.ArticlesList()) {
         composable<NavRoutes.ArticlesList>(
             deepLinks = listOf(
                 navDeepLink { uriPattern = "app://feeds/{feed_id}?feed_name={feed_name}" }
@@ -158,9 +149,6 @@ fun NavController.navigateToTag(tag: String) {
     }
 }
 
-fun NavController.navigateToMagazine() {
-    popBackStack(NavRoutes.Magazine, inclusive = false)
-}
 
 fun NavController.navigateToSettings() {
     val intent = Intent(context, SettingsActivity::class.java)

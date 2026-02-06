@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.*
 import androidx.navigation.NavDestination.Companion.hasRoute
 import com.geekorum.ttrss.R
+import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.data.Feed.Companion.FEED_ID_ALL_ARTICLES
 
 
@@ -63,6 +64,7 @@ internal class AppBarPresenter(
     private val activity: Activity,
     private val tagsViewModel: TagsViewModel,
     private val activityViewModel: ActivityViewModel,
+    private val feedsViewModel: FeedsViewModel,
     private val navController: NavController,
 ) {
 
@@ -138,6 +140,7 @@ internal class AppBarPresenter(
                     currentDestination = currentDestination,
                     onNavigationMenuClick = onNavigationMenuClick,
                     onSearchClick = { navController.navigateToSearch() },
+                    markAsRead = { feedsViewModel.markFeedAsRead(Feed(FEED_ID_ALL_ARTICLES)) },
                     scrollBehavior = scrollBehavior
                 )
             }
@@ -151,6 +154,7 @@ internal class AppBarPresenter(
         currentDestination: NavBackStackEntry?,
         onNavigationMenuClick: () -> Unit,
         onSearchClick: () -> Unit,
+        markAsRead: () -> Unit,
         modifier: Modifier = Modifier,
         scrollBehavior: TopAppBarScrollBehavior? = null
     ) {
@@ -187,6 +191,7 @@ internal class AppBarPresenter(
                     currentDestination,
                     onNavigationMenuClick,
                     onSearchClick,
+                    markAsRead,
                     Modifier.zIndex(1f)
                 )
                 AnimatedTagsList(currentDestination)
@@ -246,6 +251,7 @@ internal class AppBarPresenter(
         currentDestination: NavBackStackEntry?,
         onNavigationMenuClick: () -> Unit,
         onSearchClick: () -> Unit,
+        markAsRead: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
         var hasSortMenu by remember {
@@ -293,6 +299,7 @@ internal class AppBarPresenter(
                 AppBarTitleText(toolbarTitle)
             },
             onSearchClick = onSearchClick,
+            markAsRead = markAsRead,
             sortOrder = sortOrder,
             onSortOrderChange = {
                 val mostRecentFirst = when (it) {

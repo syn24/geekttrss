@@ -33,7 +33,7 @@
     <!-- We use the same value -->
     <color name="material_blue_grey_800" tools:override="true">#37474F</color>
     <color name="material_blue_grey_900" tools:override="true">#263238</color>
-    <color name="material_grey_300" tools:override="true">#ffe0e0e0</color>
+    <color name="material_grey_300" tools:override="true">#707070</color>
     <color name="material_green_a200">#69f0ae</color>
     <color name="material_green_a200_lighter">#9fffe0</color>
     <color name="material_green_a200_darker">#2bbd7e</color>

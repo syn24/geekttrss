@@ -51,7 +51,6 @@ class FeedNavigationMenuState(
         railState.toggle()
     }
 
-    val isMagazineSelected: Boolean = selectedItem == MagazineSelectedItem
 
     val isSettingsSelected: Boolean = selectedItem == SettingsSelectedItem
 
@@ -67,7 +66,6 @@ class FeedNavigationMenuState(
     }
 
     sealed class SelectedItem
-    data object MagazineSelectedItem: SelectedItem()
     data object SettingsSelectedItem: SelectedItem()
     data class FeedSelectedItem(val feedId: Long): SelectedItem()
 }

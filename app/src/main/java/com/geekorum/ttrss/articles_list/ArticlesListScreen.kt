@@ -56,8 +56,6 @@ fun ArticlesListScreen(
 ) {
     val compactItemsInSmallScreens by activityViewModel.displayCompactItems.collectAsStateWithLifecycle()
     val displayCompactItems = compactItemsInSmallScreens
-            && (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact ||
-            windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact)
 
     BaseArticlesListScreen(activityViewModel = activityViewModel, articlesListViewModel,
         displayCompactItems, contentPadding)
@@ -75,8 +73,6 @@ fun ArticlesListByTagScreen(
 ) {
     val compactItemsInSmallScreens by activityViewModel.displayCompactItems.collectAsStateWithLifecycle()
     val displayCompactItems = compactItemsInSmallScreens
-            && (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact ||
-            windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact)
 
     BaseArticlesListScreen(activityViewModel = activityViewModel, articlesListByTagViewModel,
         displayCompactItems, contentPadding)

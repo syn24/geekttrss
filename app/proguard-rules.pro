@@ -53,7 +53,7 @@
 -dontwarn kotlin.Unit
 
 # Top-level functions that can only be used by Kotlin.
--dontwarn retrofit2.-KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions
 
 # okhttp support conscrypt platform and some BouncyCastle
 # not available on android
@@ -67,6 +67,20 @@
 
 # geekdroid: we don't use firebase stuff
 -dontwarn com.geekorum.geekdroid.firebase.**
+
+# Room Database - Prevent R8 from removing DAOs and Entities
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-keep @androidx.room.Dao interface *
+
+# Keep Room DAO methods
+-keepclassmembers @androidx.room.Dao interface * {
+    *;
+}
+
+# Keep database classes to prevent removal by R8
+-keep class com.geekorum.ttrss.data.** { *; }
+-keep class com.geekorum.ttrss.core.** { *; }
 
 # coroutines
 # ServiceLoader support

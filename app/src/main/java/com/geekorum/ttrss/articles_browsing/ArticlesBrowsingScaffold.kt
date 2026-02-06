@@ -61,7 +61,6 @@ import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.ui.AppTheme3
 import com.geekorum.ttrss.ui.components.FeedNavigationRail
 import com.geekorum.ttrss.ui.components.FeedWideNavigationRailItem
-import com.geekorum.ttrss.ui.components.MagazineWideNavigationRailItem
 import com.geekorum.ttrss.ui.components.ModalFeedNavigationRail
 import com.geekorum.ttrss.ui.components.NavRailMenuButton
 import com.geekorum.ttrss.ui.components.SectionHeader
@@ -76,7 +75,6 @@ import kotlinx.coroutines.launch
 fun ArticleBrowsingScaffold(
     windowSizeClass: WindowSizeClass,
     feedsMenuState: FeedNavigationMenuState,
-    onMagazineClick: () -> Unit,
     onFeedClick: (Feed) -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -124,11 +122,6 @@ fun ArticleBrowsingScaffold(
             )
         },
         railQuickFeeds = {
-            MagazineWideNavigationRailItem(
-                selected = feedsMenuState.isMagazineSelected,
-                onClick = onMagazineClick,
-                railExpanded = feedsMenuState.isMenuExpanded
-            )
             val virtualFeeds by feedsMenuState.virtualFeeds.collectAsStateWithLifecycle(
                 emptyList()
             )
@@ -332,10 +325,6 @@ private fun PreviewArticleBrowsingScaffold() {
                     )
                 },
                 railQuickFeeds = {
-                    MagazineWideNavigationRailItem(
-                        selected = false,
-                        onClick = {}
-                    )
                     val feed = Feed(
                         id = Feed.FEED_ID_ALL_ARTICLES,
                         title = "All articles",

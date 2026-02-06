@@ -121,7 +121,7 @@ class ArticleSynchronizer @AssistedInject constructor(
         var work = workManager.beginWith(listOf(updateAccountInfo, sendTransactions))
                 .then(syncFeeds)
 
-         work = if (updateFeedIcons || true)
+         work = if (updateFeedIcons)
              work.then(syncFeedsIcons)
          else work
 
@@ -143,7 +143,7 @@ class ArticleSynchronizer @AssistedInject constructor(
         val jobRequests = databaseService.getFeeds()
             .filter {
                 if (!isFeedSyncable(it)) {
-                    Timber.i("Feed ${it.id} - ${it.title} is not syncable. don't collect new articles")
+                    Timber.i("Feed ${'$'}{it.id} - ${'$'}{it.title} is not syncable. don't collect new articles")
                     false
                 } else true
             }
@@ -185,7 +185,7 @@ class ArticleSynchronizer @AssistedInject constructor(
             .filter {
                 if (feedId == ApiService.ALL_ARTICLES_FEED_ID) {
                     if (!isFeedSyncable(it)) {
-                        Timber.i("Feed ${it.id} - ${it.title} is not syncable. don't update article status")
+                        Timber.i("Feed ${'$'}{it.id} - ${'$'}{it.title} is not syncable. don't update article status")
                         return@filter false
                     } else return@filter true
                 }
@@ -229,4 +229,3 @@ class ArticleSynchronizer @AssistedInject constructor(
     }
 
 }
-
