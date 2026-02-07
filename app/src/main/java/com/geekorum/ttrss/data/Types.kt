@@ -42,6 +42,11 @@ import java.util.TimeZone
 // Can't have ON DELETE CASCADE constraint because we use some REPLACE conflict resolution
 // and this seems to make a delete then an insert. The delete with cascade suppress all articles
 @Entity(tableName = "articles",
+        indices = [
+            Index(value = ["unread", "last_time_update"]),
+            Index(value = ["feed_id", "unread", "last_time_update"]),
+            Index(value = ["marked", "unread", "last_time_update"])
+        ],
         foreignKeys = [ForeignKey(
             entity = Feed::class,
             parentColumns = ["_id"],

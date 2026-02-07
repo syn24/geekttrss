@@ -116,7 +116,7 @@ class FeedsViewModel @Inject constructor(
                 try {
                     while(isActive) {
                         refreshFeeds()
-                        delay(300_000) // 5 minutes instead of 30 seconds for better performance
+                        delay(600_000) // 10 minutes for better performance and reduced load
                     }
                 } catch (e: ApiCallException) {
                     Timber.w(e, "Unable to refresh feeds and categories")
@@ -134,6 +134,14 @@ class FeedsViewModel @Inject constructor(
      * Launch job to refresh feeds and categories when collecting this flow and cancel it on flow completion
      */
     private fun <T> Flow<T>.autoRefreshed() = this.onStart {
+        // Perform initial refresh on startup
+        viewModelScope.launch {
+            try {
+                refreshFeeds()
+            } catch (e: ApiCallException) {
+                Timber.w(e, "Unable to perform initial refresh on startup")
+            }
+        }
         startRefreshFeedsJob()
     }.onCompletion {
         cancelRefreshFeedsJob()

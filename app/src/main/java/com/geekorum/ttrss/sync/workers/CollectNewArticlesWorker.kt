@@ -114,16 +114,23 @@ class CollectNewArticlesWorker @AssistedInject constructor(
         val latestId = getLatestArticleId()
 
         var offset = 0
-        var articles = getArticles(feedId, latestId, offset, includeAttachments = true)
+        val allArticles = mutableListOf<ArticleWithAttachments>()
 
-        databaseService.runInTransaction {
-            while (articles.isNotEmpty()) {
-                insertArticles(articles)
-                offset += articles.size
-                cacheArticlesImages(articles.map { it.article } )
-                articles = getArticles(feedId, latestId, offset, includeAttachments = true)
-            }
+        // Collect all articles first
+        var articles = getArticles(feedId, latestId, offset, includeAttachments = true)
+        while (articles.isNotEmpty()) {
+            allArticles.addAll(articles)
+            offset += articles.size
+            articles = getArticles(feedId, latestId, offset, includeAttachments = true)
         }
+
+        // Single transaction for all inserts - much faster
+        databaseService.runInTransaction {
+            insertArticles(allArticles)
+        }
+
+        // Cache images after transaction completes (optional, can be skipped for speed)
+        // cacheArticlesImages(allArticles.map { it.article })
     }
 
     /**

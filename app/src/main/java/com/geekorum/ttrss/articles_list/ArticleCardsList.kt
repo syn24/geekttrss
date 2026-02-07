@@ -218,6 +218,15 @@ private fun ArticleCardList(
     ) {
         val loadState by debouncedPagingViewStateFor(articles)
         val isEmpty = articles.itemCount == 0
+        var wasRefreshing by remember { mutableStateOf(false) }
+        LaunchedEffect(loadState, articles.itemCount) {
+            if (loadState is LoadState.Loading) {
+                wasRefreshing = true
+            } else if (wasRefreshing && loadState is LoadState.NotLoading && articles.itemCount > 0) {
+                wasRefreshing = false
+                listState.scrollToItem(0)
+            }
+        }
         if (isEmpty && loadState is LoadState.NotLoading) {
             FeedEmptyText(isRefreshing)
         } else {

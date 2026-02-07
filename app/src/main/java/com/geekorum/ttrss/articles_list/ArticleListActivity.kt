@@ -80,6 +80,10 @@ class ArticleListActivity : SessionActivity() {
                 accountViewModel.selectedAccount.collect { account ->
                     if (account != null) {
                         activityViewModel.setAccount(account)
+                        // Trigger automatic refresh on startup
+                        if (savedInstanceState == null) {
+                            activityViewModel.refresh()
+                        }
                     } else {
                         accountViewModel.startSelectAccountActivity(this@ArticleListActivity)
                     }

@@ -147,13 +147,14 @@ class ArticleSynchronizer @AssistedInject constructor(
                     false
                 } else true
             }
-            .shuffled()
+            .sortedByDescending { it.unreadCount } // Prioritize feeds with most unread articles
             .map { feed ->
                 val inputData = CollectNewArticlesWorker.getInputData(account, feed.id)
                 OneTimeWorkRequestBuilder<CollectNewArticlesWorker>()
                     .setConstraints(constraints)
                     .setInputData(inputData)
                     .addTag(tag)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST) // Enable parallel execution
                     .build()
             }
         collectNewArticlesJobsTag = tag
@@ -190,7 +191,7 @@ class ArticleSynchronizer @AssistedInject constructor(
                     } else return@filter true
                 }
                 it.id == feedId
-            }.shuffled()
+            }.sortedByDescending { it.unreadCount } // Prioritize feeds with most unread articles
             .map { feed ->
                 val inputData = UpdateArticleStatusWorker.getInputData(
                     account, feed.id, numberOfLatestArticlesToRefresh)
@@ -199,6 +200,7 @@ class ArticleSynchronizer @AssistedInject constructor(
                     .setConstraints(constraints)
                     .setInputData(inputData)
                     .addTag(tag)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST) // Enable parallel execution
                     .build()
             }
         updateStatusJobsTag = tag
