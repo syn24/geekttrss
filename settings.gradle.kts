@@ -41,7 +41,7 @@ plugins {
 }
 
 include(":app")
-include(":manage_feeds")
+//include(":manage_feeds")
 include(":htmlparsers")
 include(":webapi")
 include(":faviKonSnoop")

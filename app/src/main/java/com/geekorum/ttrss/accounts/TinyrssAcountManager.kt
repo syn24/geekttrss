@@ -139,30 +139,31 @@ class AndroidTinyrssAccountManager(
 
     fun getServerInformation(account: Account): ServerInformation {
         val androidAccount = android.accounts.Account(account.username, ACCOUNT_TYPE)
+
+        // Eagerly decrypt and cache values to avoid repeated KeyStore access
+        val cachedApiUrl = accountManager.getUserData(androidAccount, AccountAuthenticator.USERDATA_URL)
+        val cachedUsername = accountManager.getUserData(androidAccount,
+            AccountAuthenticator.USERDATA_BASIC_HTTP_AUTH_USERNAME)
+        val cachedPassword = run {
+            val encryptedPassword = accountManager.getUserData(androidAccount,
+                AccountAuthenticator.USERDATA_BASIC_HTTP_AUTH_PASSWORD)
+            try {
+                encryptedPassword?.let { decrypt(it) }
+            } catch (e: Exception) {
+                Timber.w(e, "unable to decrypt basic http auth password")
+                null
+            }
+        }
+
         return object : ServerInformation() {
-            override val apiUrl: String
-                get() = accountManager.getUserData(androidAccount, AccountAuthenticator.USERDATA_URL)
-
-            override val basicHttpAuthUsername: String?
-                get() =  accountManager.getUserData(androidAccount,
-                    AccountAuthenticator.USERDATA_BASIC_HTTP_AUTH_USERNAME)
-
-            override val basicHttpAuthPassword: String?
-                get() {
-                    val encryptedPassword = accountManager.getUserData(androidAccount,
-                        AccountAuthenticator.USERDATA_BASIC_HTTP_AUTH_PASSWORD)
-                    return try {
-                        encryptedPassword?.let { decrypt(it) }
-                    } catch (e: Exception) {
-                        Timber.w(e, "unable to decrypt basic http auth password")
-                        null
-                    }
-                }
+            override val apiUrl: String = cachedApiUrl
+            override val basicHttpAuthUsername: String? = cachedUsername
+            override val basicHttpAuthPassword: String? = cachedPassword
         }
     }
 
 
-    private fun decrypt(encryptedPassword: String): String {
+    private fun decrypt(encryptedPassword: String): String = withStrictMode(StrictMode.allowThreadDiskReads()) {
         val lines = encryptedPassword.lines()
         val encryptedPasswordPart = lines[0]
         val iv = Base64.decode(lines[1], Base64.NO_WRAP)
@@ -170,16 +171,16 @@ class AndroidTinyrssAccountManager(
         val input = Base64.decode(encryptedPasswordPart, Base64.NO_WRAP)
         val gcmParameterSpec = GCMParameterSpec(tlen, iv)
         val output = secretCipher.decrypt(input, gcmParameterSpec)
-        return output.toString(Charsets.UTF_8)
+        output.toString(Charsets.UTF_8)
     }
 
-    private fun encrypt(plaintextPassword: String): String {
+    private fun encrypt(plaintextPassword: String): String = withStrictMode(StrictMode.allowThreadDiskReads()) {
         val input = plaintextPassword.toByteArray(Charsets.UTF_8)
         val output = secretCipher.encrypt(input)
         val base64EncryptedPassword = Base64.encodeToString(output, Base64.NO_WRAP)
         val gcmParameterSpec = secretCipher.parametersSpec
         val base64IV = Base64.encodeToString(gcmParameterSpec.iv, Base64.NO_WRAP)
-        return "$base64EncryptedPassword\n$$base64IV\n${gcmParameterSpec.tLen}\n"
+        "$base64EncryptedPassword\n$$base64IV\n${gcmParameterSpec.tLen}\n"
     }
 }
 

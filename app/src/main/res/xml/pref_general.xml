@@ -36,7 +36,7 @@
                 />
         <SwitchPreference
             android:key="articles_compact_list_item"
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:title="@string/pref_title_articles_compact_list_items"
             android:summary="@string/pref_summary_articles_compact_list_items"
             />

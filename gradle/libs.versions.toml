@@ -77,6 +77,7 @@ aboutoss = "0.2.1"
 kotlin = "2.1.20"
 kotlin-ksp = "2.1.20-1.0.31"
 uiautomator = "2.3.0"
+bundletool = "1.17.1"
 
 [plugins]
 # these cannot be used for now because it will use multiple classpath and will make play-publisher-plugin fail
@@ -238,6 +239,7 @@ firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 
 google-play-app-update = { module = "com.google.android.play:app-update-ktx", version.ref = "google-play-core"}
 google-play-feature-delivery = { module = "com.google.android.play:feature-delivery-ktx", version.ref = "google-play-core"}
-google-play-review = { module = "com.google.android.play:review-ktx", version.ref = "google-play-core-review" }
+google-play-review = { module = "com.google.android.play:review-ktx", version.ref = "google-play-core" }
 
 gms-play-services-base = { module = "com.google.android.gms:play-services-base", version.ref = "gms-play-services-base" }
+bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }

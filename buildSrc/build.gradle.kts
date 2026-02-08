@@ -48,6 +48,12 @@ dependencies {
     implementation(libs.plugins.gradle.play.publisher.gav())
     implementation(libs.plugins.com.geekorum.avdl.flydroid.gav())
 
-    // fix https://github.com/google/dagger/issues/3068
+    // Force javapoet to fix Hilt plugin compatibility
     implementation("com.squareup:javapoet:1.13.0")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }

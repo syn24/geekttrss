@@ -25,6 +25,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import androidx.lifecycle.*
 import com.geekorum.geekdroid.app.lifecycle.Event
+import com.geekorum.ttrss.background_job.BackgroundJobManager
 import com.geekorum.ttrss.data.Article
 import com.geekorum.ttrss.data.ArticlesSearchHistoryRepository
 import com.geekorum.ttrss.data.Feed
@@ -46,6 +47,7 @@ class ActivityViewModel @Inject constructor(
     private val browserLauncher: TtRssBrowserLauncher,
     private val articlesListPreferencesRepository: ArticlesListPreferencesRepository,
     private val articlesSearchHistoryRepository: ArticlesSearchHistoryRepository,
+    private val backgroundJobManager: BackgroundJobManager,
 ) : ViewModel() {
 
     private val account = MutableStateFlow<Account?>(null)
@@ -98,6 +100,9 @@ class ActivityViewModel @Inject constructor(
     val browserIcon = browserLauncher.browserIcon.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     init {
+        // Trigger purge on app start (or Activity creation)
+        backgroundJobManager.setupPeriodicJobs()
+
         browserLauncher.warmUp()
     }
 
@@ -156,4 +161,3 @@ class ActivityViewModel @Inject constructor(
         _isScrollingUp.value = up
     }
 }
-

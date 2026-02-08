@@ -71,11 +71,11 @@ class ArticlesListPreferencesRepository @Inject constructor(
     fun getDisplayCompactArticles() = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             if (key == PREF_ARTICLES_COMPACT_LIST_ITEMS) {
-                trySendBlocking(prefs.getBoolean(PREF_ARTICLES_COMPACT_LIST_ITEMS, false))
+                trySendBlocking(prefs.getBoolean(PREF_ARTICLES_COMPACT_LIST_ITEMS, true))
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        val initial = prefs.getBoolean(PREF_ARTICLES_COMPACT_LIST_ITEMS, false)
+        val initial = prefs.getBoolean(PREF_ARTICLES_COMPACT_LIST_ITEMS, true)
         send(initial)
         awaitClose {
             prefs.unregisterOnSharedPreferenceChangeListener(listener)

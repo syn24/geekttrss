@@ -131,6 +131,7 @@ fun ArticleCardList(
     val pullRefreshState = rememberPullToRefreshState()
     val articles = viewModel.articles.collectAsLazyPagingItems()
     val isMultiFeedList by viewModel.isMultiFeed.collectAsState()
+    val isAllArticlesFeed by viewModel.isAllArticlesFeed.collectAsState()
 
     val loadState by debouncedPagingViewStateFor(articles)
     val isEmpty = articles.itemCount == 0
@@ -153,17 +154,29 @@ fun ArticleCardList(
         pullRefreshState = pullRefreshState,
         browserApplicationIcon = browserApplicationIcon,
         displayCompactItems = displayCompactItems,
-        onCardClick = onCardClick,
+        onCardClick = { index, article ->
+            viewModel.setArticleUnread(article.id, false)
+            if (!isAllArticlesFeed) {
+                articles.refresh()
+            }
+            onCardClick(index, article)
+        },
         onShareClick = onShareClick,
         onOpenInBrowserClick = onOpenInBrowserClick,
         onToggleUnreadClick = {
             viewModel.setArticleUnread(it.id, !it.isTransientUnread)
+            if (!isAllArticlesFeed) {
+                articles.refresh()
+            }
         },
         onStarChanged = { article, newValue ->
             viewModel.setArticleStarred(article.id, newValue)
         },
         onSwiped = {
             viewModel.setArticleUnread(it.id, false)
+            if (!isAllArticlesFeed) {
+                articles.refresh()
+            }
         },
         onRefresh = {
             viewModel.refresh()
@@ -218,15 +231,31 @@ private fun ArticleCardList(
     ) {
         val loadState by debouncedPagingViewStateFor(articles)
         val isEmpty = articles.itemCount == 0
-        var wasRefreshing by remember { mutableStateOf(false) }
-        LaunchedEffect(loadState, articles.itemCount) {
-            if (loadState is LoadState.Loading) {
-                wasRefreshing = true
-            } else if (wasRefreshing && loadState is LoadState.NotLoading && articles.itemCount > 0) {
-                wasRefreshing = false
-                listState.scrollToItem(0)
+
+        // Scroll to top when refresh completes and data is loaded
+        LaunchedEffect(articles, isRefreshing) {
+            snapshotFlow {
+                Triple(
+                    articles.loadState.refresh,
+                    articles.itemCount,
+                    isRefreshing
+                )
             }
+                .distinctUntilChanged()
+                .collect { (refreshState, itemCount, refreshing) ->
+                    // Only scroll when:
+                    // 1. Refresh is complete (NotLoading)
+                    // 2. We have items loaded
+                    // 3. Pull-to-refresh animation is done
+                    if (refreshState is LoadState.NotLoading && itemCount > 0 && !refreshing) {
+                        // Check if we're not already at the top to avoid unnecessary scrolls
+                        if (listState.firstVisibleItemIndex > 0) {
+                            listState.scrollToItem(0)
+                        }
+                    }
+                }
         }
+
         if (isEmpty && loadState is LoadState.NotLoading) {
             FeedEmptyText(isRefreshing)
         } else {

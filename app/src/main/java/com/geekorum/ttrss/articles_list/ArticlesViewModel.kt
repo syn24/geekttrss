@@ -65,7 +65,7 @@ abstract class BaseArticlesViewModel(
 ) : ViewModel() {
 
     protected val component = componentFactory.newComponent()
-    private val articlesRepository = component.articleRepository
+    protected val articlesRepository = component.articleRepository
     private val setFieldActionFactory = component.setArticleFieldActionFactory
 
     abstract val articles: Flow<PagingData<ArticleWithFeed>>
@@ -75,6 +75,7 @@ abstract class BaseArticlesViewModel(
 
     abstract val isRefreshing: StateFlow<Boolean>
     abstract val isMultiFeed: StateFlow<Boolean>
+    abstract val isAllArticlesFeed: StateFlow<Boolean>
 
     private val unreadActionUndoManager = UndoManager<Action>()
 
@@ -265,6 +266,8 @@ class ArticlesListViewModel @AssistedInject constructor(
 
     override val isMultiFeed: StateFlow<Boolean> = MutableStateFlow(Feed.isVirtualFeed(feedId))
 
+    override val isAllArticlesFeed: StateFlow<Boolean> = MutableStateFlow(feedId == Feed.FEED_ID_ALL_ARTICLES)
+
     override val articles: Flow<PagingData<ArticleWithFeed>> = feedsRepository.getFeedById(feedId)
         .filterNotNull()
         .flatMapLatest { getArticlesForFeed(it) }
@@ -284,19 +287,32 @@ class ArticlesListViewModel @AssistedInject constructor(
 
     private fun getArticlesForFeed(feed: Feed): Flow<PagingData<ArticleWithFeed>> {
         val isMostRecentOrderFlow = sortByMostRecentFirst
-        val needUnreadFlow = if (feed.isStarredFeed) flowOf(false) else
-            needUnread
-        return isMostRecentOrderFlow.combine(needUnreadFlow) { mostRecentFirst, needUnread ->
-            getArticleAccess(mostRecentFirst, needUnread)
-        }.flatMapLatest { access ->
+
+        return isMostRecentOrderFlow.flatMapLatest { mostRecentFirst ->
             val config = PagingConfig(pageSize = 50)
             val pager = Pager(config) {
-                when {
-                    feed.isStarredFeed -> access.starredArticles
-                    feed.isPublishedFeed -> access.publishedArticles
-                    feed.isFreshFeed -> access.freshArticles
-                    feed.isAllArticlesFeed -> access.allArticles
-                    else -> access.articlesForFeed(feed.id)
+                when (feed.id) {
+                    Feed.FEED_ID_STARRED -> {
+                        if (mostRecentFirst) articlesRepository.getAllStarredArticles()
+                        else articlesRepository.getAllStarredArticlesOldestFirst()
+                    }
+                    Feed.FEED_ID_PUBLISHED -> {
+                        if (mostRecentFirst) articlesRepository.getAllPublishedArticles()
+                        else articlesRepository.getAllPublishedArticlesOldestFirst()
+                    }
+                    Feed.FEED_ID_ALL_ARTICLES -> {
+                        if (mostRecentFirst) articlesRepository.getAllArticles()
+                        else articlesRepository.getAllArticlesOldestFirst()
+                    }
+                    Feed.FEED_ID_FRESH -> {
+                        val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
+                        if (mostRecentFirst) articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
+                        else articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
+                    }
+                    else -> {
+                        if (mostRecentFirst) articlesRepository.getAllUnreadArticlesForFeed(feed.id)
+                        else articlesRepository.getAllUnreadArticlesForFeedOldestFirst(feed.id)
+                    }
                 }
             }
             pager.flow
@@ -330,6 +346,8 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
     }
 
     override val isMultiFeed: StateFlow<Boolean> = MutableStateFlow(true)
+
+    override val isAllArticlesFeed: StateFlow<Boolean> = MutableStateFlow(false)
 
     private val account: Account = component.account
 

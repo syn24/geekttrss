@@ -56,9 +56,9 @@ object NavRoutes {
     @Serializable
     data class ArticlesList(
         @SerialName("feed_id")
-        val feedId: Long = -4L,
+        val feedId: Long = -3L,
         @SerialName("feed_name")
-        val feedName: String? = "All Articles"
+        val feedName: String? = "Fresh Articles"
     )
 
     @Serializable
@@ -128,14 +128,15 @@ fun ArticlesListNavHost(
     }
 }
 
- fun NavController.navigateToFeed(feedId: Long = -4L, feedTitle: String? = null) {
-     // we change navigation stack but don't restore state
+ fun NavController.navigateToFeed(feedId: Long = -3L, feedTitle: String? = null) {
+     // Always create a new destination so feedId changes are applied.
      val route = NavRoutes.ArticlesList(feedId, feedTitle)
      navigate(route) {
          popUpTo(graph.findStartDestination().route!!) {
-             saveState = true
+             saveState = false
          }
-         launchSingleTop = true
+         launchSingleTop = false
+         restoreState = false
      }
  }
 
@@ -175,10 +176,16 @@ fun NavController.navigateToSearch(query: String = "") {
 }
 
 fun NavController.navigateToManageFeeds() {
-    val intent = Intent().apply {
-        component = ComponentName(context, "com.geekorum.ttrss.manage_feeds.ManageFeedsActivity")
+    val activityClass = "com.geekorum.ttrss.manage_feeds.ManageFeedsActivity"
+    try {
+        val intent = Intent().setClassName(context.packageName, activityClass)
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // Fallback or Log: This happens if the Dynamic Feature Module is not installed correctly
+        // often happens when installing single APK instead of Bundle/App-Slices in Debug
+        android.util.Log.e("Navigation", "Could not start ManageFeedsActivity: $activityClass", e)
+        android.widget.Toast.makeText(context, "Error: Manage Feeds module not installed.", android.widget.Toast.LENGTH_LONG).show()
     }
-    context.startActivity(intent)
 }
 
 fun createFeedDeepLink(feed: Feed, title: String): Uri {

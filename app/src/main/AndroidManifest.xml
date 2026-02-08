@@ -198,6 +198,21 @@
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
 
+        <activity android:name="com.geekorum.ttrss.manage_feeds.ManageFeedsActivity"
+                  android:theme="@style/AppTheme.ManageFeedsActivity"
+                  android:exported="false" />
+
+        <activity android:name="com.geekorum.ttrss.manage_feeds.add_feed.SubscribeToFeedActivity"
+                android:theme="@style/AppTheme.NoActionBar"
+                android:windowSoftInputMode="adjustResize"
+                android:exported="false" />
+
+        <activity android:name="com.geekorum.ttrss.manage_feeds.add_feed.AddFeedActivity"
+                  android:label="@string/activity_add_feed_title"
+                  android:theme="@style/AppTheme.AddFeedActivity"
+                  android:noHistory="true"
+                  android:exported="false" />
+
     </application>
 
 </manifest>

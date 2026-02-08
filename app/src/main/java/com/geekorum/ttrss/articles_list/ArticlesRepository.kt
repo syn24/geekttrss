@@ -145,6 +145,19 @@ class ArticlesRepository
     suspend fun getMostUnreadTags(count: Int): List<String> {
         return articleDao.getMostUnreadTags(count)
     }
+
+    fun getFreshUnreadCount(): Flow<Int> {
+        val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
+        return articleDao.getUnreadArticlesUpdatedAfterTimeCount(freshTimeSec)
+    }
+
+    fun getAllArticlesCount(): Flow<Int> {
+        return articleDao.getAllArticlesCount()
+    }
+
+    fun getAllStarredArticlesCount(): Flow<Int> {
+        return articleDao.getAllStarredArticlesCount()
+    }
 }
 
 

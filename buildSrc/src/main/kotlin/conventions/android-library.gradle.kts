@@ -18,16 +18,14 @@
  * You should have received a copy of the GNU General Public License
  * along with Geekttrss.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.geekorum.ttrss.providers
+package com.geekorum.build.conventions
 
-import androidx.room.Dao
-import androidx.room.Query
-
-/**
- * Dao to purge old articles from database
- */
-@Dao
-interface PurgeArticlesDao {
-    @Query("DELETE FROM articles WHERE unread=0 AND marked=0 AND published=0 AND last_time_update<=:beforeTimeSec AND _id NOT IN (SELECT MAX(_id) FROM articles GROUP BY feed_id)")
-    suspend fun deleteNonImportantArticlesBeforeTime(beforeTimeSec: Long): Int
+plugins {
+    id("com.android.library")
+    kotlin("android")
+    id("com.geekorum.build.source-license-checker")
 }
+
+conventionForAndroidProject()
+conventionForKotlinProject()
+

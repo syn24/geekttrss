@@ -72,7 +72,7 @@ private fun createSpecialFeeds(): List<FeedWithFavIcon> {
         feed = Feed.createVirtualFeedForId(Feed.FEED_ID_STARRED),
         favIcon = null)
 
-    return listOf(allArticles, freshArticles, starredArticles)
+    return listOf(freshArticles, allArticles, starredArticles)
 }
 
 

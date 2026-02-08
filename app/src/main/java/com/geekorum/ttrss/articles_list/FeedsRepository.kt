@@ -25,6 +25,7 @@ import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.data.FeedWithFavIcon
 import com.geekorum.ttrss.data.FeedsDao
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -34,11 +35,18 @@ import javax.inject.Inject
  */
 class FeedsRepository
 @Inject constructor(
-    private val feedsDao: FeedsDao
+    private val feedsDao: FeedsDao,
+    private val articlesRepository: ArticlesRepository
 ) {
-    val allUnreadFeeds: Flow<List<FeedWithFavIcon>> = feedsDao.getAllUnreadFeeds().map(this::addSpecialFeeds)
+    private val freshUnreadCount: Flow<Int> = articlesRepository.getFreshUnreadCount()
+    private val allArticlesCount: Flow<Int> = articlesRepository.getAllArticlesCount()
+    private val allStarredCount: Flow<Int> = articlesRepository.getAllStarredArticlesCount()
 
-    val allFeeds: Flow<List<FeedWithFavIcon>> = feedsDao.getAllFeeds().map(this::addSpecialFeeds)
+    val allUnreadFeeds: Flow<List<FeedWithFavIcon>> =
+        combine(feedsDao.getAllUnreadFeeds(), freshUnreadCount, allArticlesCount, allStarredCount, ::addSpecialFeeds)
+
+    val allFeeds: Flow<List<FeedWithFavIcon>> =
+        combine(feedsDao.getAllFeeds(), freshUnreadCount, allArticlesCount, allStarredCount, ::addSpecialFeeds)
 
     val allCategories: Flow<List<Category>> = feedsDao.getAllCategories()
 
@@ -51,22 +59,20 @@ class FeedsRepository
         }
     }
 
-    private fun addSpecialFeeds(feeds: List<FeedWithFavIcon>): List<FeedWithFavIcon> {
+    private fun addSpecialFeeds(feeds: List<FeedWithFavIcon>, freshUnread: Int, allCount: Int, starredCount: Int): List<FeedWithFavIcon> {
         // add special feeds
-        val totalUnread = feeds.sumOf { it.feed.unreadCount }
         val allArticles = FeedWithFavIcon(
-            feed = Feed.createVirtualFeedForId(Feed.FEED_ID_ALL_ARTICLES, totalUnread),
+            feed = Feed.createVirtualFeedForId(Feed.FEED_ID_ALL_ARTICLES, allCount),
             favIcon = null)
 
-        //TODO calculate how much articles by special feeds
         val freshArticles = FeedWithFavIcon(
-            feed = Feed.createVirtualFeedForId(Feed.FEED_ID_FRESH),
+            feed = Feed.createVirtualFeedForId(Feed.FEED_ID_FRESH, freshUnread),
             favIcon = null)
         val starredArticles = FeedWithFavIcon(
-            feed = Feed.createVirtualFeedForId(Feed.FEED_ID_STARRED),
+            feed = Feed.createVirtualFeedForId(Feed.FEED_ID_STARRED, starredCount),
             favIcon = null)
 
-        return listOf(allArticles, freshArticles, starredArticles, *feeds.toTypedArray())
+        return listOf(freshArticles, allArticles, starredArticles, *feeds.toTypedArray())
     }
 
     fun getUnreadFeedsForCategory(catId: Long): Flow<List<Feed>> {

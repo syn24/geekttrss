@@ -43,7 +43,7 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {  // CREATED → STARTED
                 accountViewModel.selectedAccount.collect { account ->
                     if (account != null) {
                         val intent = if (UseSingleActivity)
@@ -52,6 +52,8 @@ class MainActivity : BaseActivity() {
                             Intent(this@MainActivity, ArticleListActivity::class.java)
                         startActivity(intent)
                         finish()
+                        // Cancel this coroutine after starting new activity
+                        return@collect
                     } else {
                         accountViewModel.startSelectAccountActivity(this@MainActivity)
                     }

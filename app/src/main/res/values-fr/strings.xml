@@ -21,7 +21,7 @@
     along with Geekttrss.  If not, see <http://www.gnu.org/licenses/>.
 
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="ttrss_account">Tiny Tiny RSS</string>
     <string name="prompt_url">Url du serveur Tiny Tiny Rss</string>
     <string name="prompt_username">Nom d\'utilisateur</string>
@@ -119,4 +119,33 @@
     <string name="label_fresh_feeds_title">Articles récents</string>
     <string name="label_starred_feeds_title">Articles favoris</string>
     <string name="label_all_articles_feeds_title">Tous les articles</string>
+    <string name="activity_manage_feed_title">Mes flux</string>
+    <string name="fragment_confirmation_title">Se désabonner ?</string>
+    <string name="btn_confirm">Se désabonner</string>
+    <string name="btn_cancel">Annuler</string>
+    <string name="lbl_unsubscribe_msg">Vous ne recevrez plus de mise à jour de</string>
+    <!-- <string name="activity_add_feed_title">S\'abonner à un flux</string> REMOVED DUPLICATE -->
+    <string name="activity_subscribe_feed_no_feeds_available">Pas de flux disponibles</string>
+    <string name="activity_add_feed_looking_for_feed">Recherche de flux</string>
+    <string name="activity_add_feed_account_subtitle">Compte</string>
+    <string name="activity_add_feed_btn_subscribe">S\'abonner</string>
+    <string name="activity_subscribe_feed_btn_subscribe">S\'abonner</string>
+    <string name="activity_subscribe_feed_btn_cancel">Annuler</string>
+    <string name="activity_subscribe_feed_btn_back">Retour</string>
+    <string name="activity_subscribe_feed_btn_close">Fermer</string>
+    <string name="fragment_enter_feed_url_label">Entrer l\'url du flux ou du site web</string>
+    <string name="fragment_enter_feed_url_field_label">Url</string>
+    <string name="fragment_display_error_no_feeds_found">Nous n\'avons pas trouver de flux sur ce site web. Vérifiez l\'url</string>
+    <string name="fragment_display_error_io_error">Un problème est survenu. Verifiez votre connection internet</string>
+    <string name="lbl_feed_url">Url</string>
+    <string name="btn_unsubscribe">Se désabonner</string>
+    <string name="btn_create_shortcut">Créer un raccourci</string>
+    <plurals name="fragment_select_feed_label">
+        <item quantity="one" tools:ignore="ImpliedQuantity">Nous avons trouvé ce flux sur ce site web. Voulez-vous vous abonner ?</item>
+        <item quantity="other">Nous avons trouvé %d flux sur ce site web. Selectionner celui auquel vous voulez vous abonner.</item>
+    </plurals>
+    <string name="lbl_all_articles_feed_description">C\'est un flux virtuel qui contient tous les articles</string>
+    <string name="lbl_fresh_articles_feed_description">C\'est un flux virtuel qui contient les articles récents</string>
+    <string name="lbl_starred_articles_feed_description">C\'est un flux virtuel qui contient vos articles favoris</string>
+    <string name="lbl_special_feeds_category">Flux spéciaux</string>
 </resources>

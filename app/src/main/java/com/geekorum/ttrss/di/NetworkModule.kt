@@ -41,8 +41,6 @@ import javax.net.SocketFactory
 private const val DEBUG_REQUEST = false
 private const val DEBUG_RETROFIT_CALL = true
 private const val TAG_OKHTTP = 1
-@Deprecated("Picasso is not used anymore")
-private const val TAG_PICASSO = 2
 private const val TAG_COIL = 3
 
 @Module
@@ -97,6 +95,10 @@ object NetworkModule {
     @Singleton
     internal fun providesImageLoader(application: Application, okHttpClient: OkHttpClient): ImageLoader {
         return ImageLoader.Builder(application)
+            .components {
+                // Register custom FileKeyer to avoid checking lastModified on main thread (StrictMode violation)
+                add(com.geekorum.ttrss.network.PathFileKeyer(addLastModifiedToFileCacheKey = false), File::class.java)
+            }
             .diskCache {
                 DiskCache.Builder()
                     .directory(application.cacheDir.resolve("image_cache"))

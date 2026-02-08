@@ -195,8 +195,7 @@
 
 
     <!-- defined in feature modules but we style need to specify the parent here, for universal apk-->
-    <style name="AppTheme.ManageFeedsActivity" parent="AppTheme.NoActionBar" tools:ignore="UnusedResources"/>
-    <style name="AppTheme.AddFeedActivity" parent="@style/Theme.MaterialComponents.DayNight.BottomSheetDialog"
-            tools:ignore="UnusedResources"/>
+    <style name="AppTheme.ManageFeedsActivity" parent="AppTheme.NoActionBar"/>
+    <style name="AppTheme.AddFeedActivity" parent="Theme.Geekdroid.ModalBottomSheetDialogActivity"/>
 
 </resources>

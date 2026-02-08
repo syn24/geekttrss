@@ -45,6 +45,7 @@ import androidx.work.await
 import androidx.work.workDataOf
 import com.geekorum.ttrss.providers.ArticlesContract
 import com.geekorum.ttrss.providers.PurgeArticlesWorker
+import com.geekorum.ttrss.sync.SyncContract
 import com.geekorum.ttrss.sync.workers.CollectNewArticlesWorker
 import com.geekorum.ttrss.sync.workers.SendTransactionsWorker
 import com.geekorum.ttrss.sync.workers.SyncFeedsWorker
@@ -85,10 +86,16 @@ class BackgroundJobManager @Inject constructor(
 
     fun setupPeriodicJobs() {
         setupPeriodicPurge()
+        // Immediately purge old articles on app start to prevent OutOfMemoryError
+        triggerImmediatePurge()
     }
 
     private fun setupPeriodicPurge() {
         impl.setupPeriodicPurge()
+    }
+
+    fun triggerImmediatePurge() {
+        impl.triggerImmediatePurge()
     }
 
     companion object {
@@ -134,6 +141,8 @@ private open class BackgroundJobManagerImpl internal constructor(
 
     fun refresh(account: Account) {
         val extras = Bundle()
+        // Always update feed icons on manual refresh to ensure they're loaded
+        extras.putBoolean(SyncContract.EXTRA_UPDATE_FEED_ICONS, true)
         requestSync(account, extras)
     }
 
@@ -222,6 +231,17 @@ private open class BackgroundJobManagerImpl internal constructor(
         WorkManager.getInstance(context)
             .enqueueUniquePeriodicWork(
                 BackgroundJobManager.PERIODIC_PURGE_JOB, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    open fun triggerImmediatePurge() {
+        // Run purge immediately on startup without constraints
+        val request = OneTimeWorkRequestBuilder<PurgeArticlesWorker>()
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(
+                "immediate_purge_startup",
+                ExistingWorkPolicy.REPLACE,
+                request)
     }
 
     fun cancelRefresh(account: Account) {

@@ -30,6 +30,7 @@ import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.network.ApiService
 import com.geekorum.ttrss.session.SessionActivityComponent
 import com.geekorum.ttrss.webapi.ApiCallException
+import com.geekorum.ttrss.background_job.BackgroundJobManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -48,6 +49,7 @@ class FeedsViewModel @Inject constructor(
     private val dispatchers: CoroutineDispatchersProvider,
     private val feedsRepository: FeedsRepository,
     private val articlesRepository: ArticlesRepository,
+    private val backgroundJobManager: BackgroundJobManager,
     componentFactory: SessionActivityComponent.Factory
 ) : ViewModel() {
 
@@ -156,10 +158,11 @@ class FeedsViewModel @Inject constructor(
                     else -> articlesRepository.setArticlesUnreadForFeed(feed.id, false)
                 }
                 refreshFeeds()
+                // Trigger immediate purge to remove old articles that are now read
+                backgroundJobManager.triggerImmediatePurge()
             } catch (e: ApiCallException) {
                 Timber.w(e, "Unable to mark feed as read")
             }
         }
     }
-
 }

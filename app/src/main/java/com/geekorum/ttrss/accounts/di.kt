@@ -60,7 +60,9 @@ object AndroidTinyrssAccountManagerModule {
 
     @Provides
     fun providesAndroidTinyrssAccountManager(accountManager: AccountManager, secretEncryption: SecretEncryption): AndroidTinyrssAccountManager {
-        val secretCipher = secretEncryption.getSecretCipher(KEY_ALIAS)
+        val secretCipher = com.geekorum.ttrss.debugtools.withStrictMode(android.os.StrictMode.allowThreadDiskReads()) {
+            secretEncryption.getSecretCipher(KEY_ALIAS)
+        }
         return AndroidTinyrssAccountManager(accountManager, secretCipher)
     }
 

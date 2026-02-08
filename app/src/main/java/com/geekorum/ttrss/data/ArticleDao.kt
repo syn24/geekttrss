@@ -139,6 +139,15 @@ interface ArticleDao {
     @Transaction
     fun getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time: Long): PagingSource<Int, ArticleWithFeed>
 
+    @Query("SELECT COUNT(*) FROM articles WHERE last_time_update>=:time AND unread=1")
+    fun getUnreadArticlesUpdatedAfterTimeCount(time: Long): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM articles")
+    fun getAllArticlesCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM articles WHERE marked=1")
+    fun getAllStarredArticlesCount(): Flow<Int>
+
     @Query("UPDATE articles SET transiant_unread=:isUnread WHERE _id=:articleId")
     suspend fun updateArticleTransientUnread(articleId: Long, isUnread: Boolean)
 

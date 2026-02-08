@@ -411,7 +411,8 @@ private fun ArticleDetailsContent(
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    articleContent: @Composable () -> Unit) {
+    articleContent: @Composable () -> Unit
+) {
     Column(modifier
         .padding(horizontal = 16.dp)
         .verticalScroll(scrollState)
@@ -786,6 +787,12 @@ fun ArticleDetailsForSinglePane(
     val readMoreArticles by articleDetailsViewModel.additionalArticles.collectAsState()
     val browserIcon by articleDetailsViewModel.browserIcon.collectAsStateWithLifecycle()
 
+    LaunchedEffect(article?.id, article?.isUnread) {
+        if (article?.isUnread == true) {
+            articleDetailsViewModel.setArticleUnread(false)
+        }
+    }
+
     val context = LocalContext.current
     val articleDetailsScreenState = rememberArticleDetailsScreenState()
 
@@ -883,6 +890,12 @@ fun ArticleDetailsForDualPanes(
     val article by articleDetailsViewModel.article.collectAsStateWithLifecycle()
     val readMoreArticles by articleDetailsViewModel.additionalArticles.collectAsState()
     val browserIcon by articleDetailsViewModel.browserIcon.collectAsStateWithLifecycle()
+
+    LaunchedEffect(article?.id, article?.isUnread) {
+        if (article?.isUnread == true) {
+            articleDetailsViewModel.setArticleUnread(false)
+        }
+    }
 
     val context = LocalContext.current
 

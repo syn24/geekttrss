@@ -20,6 +20,17 @@
  */
 import com.geekorum.build.*
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Force javapoet version to fix Hilt plugin crash (java.lang.NoSuchMethodError: ...ClassName.canonicalName())
+        classpath("com.squareup:javapoet:1.13.0")
+    }
+}
+
 plugins {
 //    alias(libs.plugins.android.application) apply false
 //    alias(libs.plugins.android.dynamic.feature) apply false

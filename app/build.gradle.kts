@@ -46,6 +46,7 @@ plugins {
 buildscript {
     dependencies {
         classpath(libs.android.gradle.plugin)
+        classpath("com.squareup:javapoet:1.13.0")
     }
 }
 
@@ -112,7 +113,6 @@ android {
         }
     }
 
-    dynamicFeatures += setOf(":manage_feeds")
 
     packaging {
         // Fix: https://github.com/Kotlin/kotlinx.coroutines/issues/2023
@@ -224,6 +224,7 @@ dependencies {
     implementation(project(":htmlparsers"))
     implementation(project(":webapi"))
     implementation(project(":faviKonSnoop"))
+    implementation(project(":manage_feeds"))
 
     implementation(libs.android.material)
 

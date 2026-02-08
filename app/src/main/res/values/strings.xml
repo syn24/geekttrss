@@ -48,10 +48,52 @@
     <string name="label_feed_name" translatable="false">{feed_name}</string>
     <string name="label_tag" translatable="false">#{tag}</string>
     <string name="menu_item_mark_feed_as_read">Mark as read</string>
-    <string name="label_articles_search_no_results">No articles found for \"%1$s\"</string>
-    <string name="label_articles_search_no_results_instructions">Check the spelling or try a different search term</string>
 
-    <!-- activity article details -->
+    <string name="activity_manage_feed_title">My feeds</string>
+
+    <!--   Confirmation fragment-->
+    <string name="fragment_confirmation_title">Unsubscribe ?</string>
+    <string name="btn_confirm">Unsubscribe</string>
+    <!-- <string name="btn_cancel">Cancel</string> ALREADY EXISTS -->
+    <string name="lbl_unsubscribe_msg">You won\'t receive any updates from</string>
+
+    <!-- activity add feed -->
+    <string name="activity_add_feed_looking_for_feed">Looking for feed</string>
+    <string name="activity_add_feed_account_subtitle">Account</string>
+    <string name="activity_add_feed_btn_subscribe">Subscribe</string>
+    <string name="activity_add_feed_no_feeds_found">We did not find any feeds on this website</string>
+
+
+    <!-- activity subscribe to feed -->
+    <string name="activity_subscribe_feed_btn_subscribe">Subscribe</string>
+    <string name="activity_subscribe_feed_btn_cancel">Cancel</string>
+    <string name="activity_subscribe_feed_btn_back">Back</string>
+    <string name="activity_subscribe_feed_btn_close">Close</string>
+    <string name="activity_subscribe_feed_no_feeds_available">No feeds available</string>
+
+    <!-- fragment enter feed url -->
+    <string name="fragment_enter_feed_url_label">Enter feed or website url</string>
+    <string name="fragment_enter_feed_url_field_label">Url</string>
+
+    <!-- fragment select feed -->
+    <plurals name="fragment_select_feed_label">
+        <item quantity="one">We found this feed on this website. Do you want to subscribe ?</item>
+        <item quantity="other">We found %d feeds on this website. Select the one you want to subscribe to.</item>
+    </plurals>
+
+    <!-- fragment_display_error -->
+    <string name="fragment_display_error_no_feeds_found">We did not find any feeds on this website. Check the url</string>
+    <string name="fragment_display_error_io_error">Something went wrong. Check your internet connectivity</string>
+
+    <!-- EditFeedScreen   -->
+    <string name="lbl_feed_url">Url</string>
+    <string name="btn_unsubscribe">Unsubscribe</string>
+    <string name="btn_create_shortcut">Create shortcut</string>
+    <string name="lbl_all_articles_feed_description">This is a virtual feed that contains all articles</string>
+    <string name="lbl_fresh_articles_feed_description">This is a virtual feed that contains recent articles</string>
+    <string name="lbl_starred_articles_feed_description">This is a virtual feed that contains your favorite articles</string>
+    <string name="lbl_special_feeds_category">Special feeds</string>
+
     <string name="title_article_details">Article details</string>
     <string name="title_feeds_menu">Feeds</string>
 
@@ -160,4 +202,9 @@
     <!-- ArticlesListAppBar   -->
     <string name="content_desc_btn_clear">Clear</string>
     <string name="placeholder_textfield_search">Search articles</string>
+
+    <!-- Missing strings -->
+    <string name="btn_cancel">Cancel</string>
+    <string name="label_articles_search_no_results">No results found for \"%1$s\"</string>
+    <string name="label_articles_search_no_results_instructions">Check your spelling or try a different search term</string>
 </resources>

@@ -22,7 +22,7 @@
 
 -->
 <network-security-config xmlns:tools="http://schemas.android.com/tools">
-    <base-config>
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system"/>
             <!-- also trust user added CA -->

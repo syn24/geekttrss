@@ -46,7 +46,12 @@ class SynchronizationFacade @Inject constructor(
 
     override suspend fun getLatestArticleId(): Long? = synchronizationDao.getLatestArticleId()
 
-    override suspend fun getLatestArticleIdFromFeed(feedId: Long): Long? = synchronizationDao.getLatestArticleIdFromFeed(feedId)
+    override suspend fun getLatestArticleIdFromFeed(feedId: Long): Long? {
+        if (Feed.isVirtualFeed(feedId)) {
+            return getLatestArticleId()
+        }
+        return synchronizationDao.getLatestArticleIdFromFeed(feedId)
+    }
 
     override suspend fun getArticle(id: Long): Article? = synchronizationDao.getArticleById(id)
 

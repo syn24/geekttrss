@@ -33,20 +33,22 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
+import androidx.work.CoroutineWorker
+
 @HiltWorker
 class PurgeArticlesWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val purgeArticlesDao: PurgeArticlesDao
-) : Worker(appContext, params) {
-    override fun doWork(): Result {
+) : CoroutineWorker(appContext, params) {
+    override suspend fun doWork(): Result {
         purgeOldArticles()
         return Result.success()
     }
 
-    private fun purgeOldArticles() {
-        // older than 3 months
-        val oldTimeSec = System.currentTimeMillis() / 1000 - TimeUnit.DAYS.toSeconds(90)
+    private suspend fun purgeOldArticles() {
+        // older than 1 days
+        val oldTimeSec = System.currentTimeMillis() / 1000 - TimeUnit.DAYS.toSeconds(1)
 
         val deleted = purgeArticlesDao.deleteNonImportantArticlesBeforeTime(oldTimeSec)
         Timber.i("Purge $deleted old articles")
