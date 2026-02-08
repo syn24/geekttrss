@@ -98,13 +98,6 @@ android {
         register("free") {
             dimension = "distribution"
             applicationIdSuffix = ".free"
-            // disable mapping file upload for free flavor as it doesn't work and the free flavor
-            // doesn't use crashlytics anyway
-            plugins.withType<CrashlyticsPlugin>{
-                (this@register as ExtensionAware).extensions.configure<CrashlyticsExtension> {
-                    mappingFileUploadEnabled = false
-                }
-            }
         }
 
         register("google") {
@@ -224,7 +217,6 @@ dependencies {
     implementation(project(":htmlparsers"))
     implementation(project(":webapi"))
     implementation(project(":faviKonSnoop"))
-    implementation(project(":manage_feeds"))
 
     implementation(libs.android.material)
 
