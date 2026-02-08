@@ -21,7 +21,7 @@
 import com.geekorum.build.dualTestImplementation
 
 plugins {
-    id("com.geekorum.build.conventions.android-dynamic-feature")
+    id("com.geekorum.build.conventions.android-library")
     alias(libs.plugins.kotlin.ksp)
     id("com.geekorum.build.android-tests")
     id("com.geekorum.build.android-avdl")
