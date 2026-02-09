@@ -56,7 +56,7 @@ object NavRoutes {
     @Serializable
     data class ArticlesList(
         @SerialName("feed_id")
-        val feedId: Long = -3L,
+        val feedId: Long = Feed.FEED_ID_FRESH,
         @SerialName("feed_name")
         val feedName: String? = "Fresh Articles"
     )
@@ -128,7 +128,7 @@ fun ArticlesListNavHost(
     }
 }
 
- fun NavController.navigateToFeed(feedId: Long = -3L, feedTitle: String? = null) {
+ fun NavController.navigateToFeed(feedId: Long = Feed.FEED_ID_FRESH, feedTitle: String? = null) {
      // Always create a new destination so feedId changes are applied.
      val route = NavRoutes.ArticlesList(feedId, feedTitle)
      navigate(route) {

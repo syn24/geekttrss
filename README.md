@@ -65,10 +65,5 @@ Just use Gradle to build
 - JDK 17 (recommended for newer Android Gradle Plugins)
 - Android Studio
 
-Testing
-==================
 
-https://nginx.gcsjalqoa4b29t1j.myfritz.net/ttrss/
-sandra
-simple78
 

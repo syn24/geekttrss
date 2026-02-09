@@ -201,10 +201,11 @@ abstract class BaseArticlesViewModel(
         override val publishedArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllPublishedArticles()
 
+        // Fresh Articles: IMMER nur ungelesene Artikel, unabhängig von anderen Einstellungen
         override val freshArticles: PagingSource<Int, ArticleWithFeed>
             get() {
                 val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                return articlesRepository.getAllArticlesUpdatedAfterTime(freshTimeSec)
+                return articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
             }
 
         override val allArticles: PagingSource<Int, ArticleWithFeed>
@@ -226,10 +227,11 @@ abstract class BaseArticlesViewModel(
         override val publishedArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllPublishedArticlesOldestFirst()
 
+        // Fresh Articles: IMMER nur ungelesene Artikel, unabhängig von anderen Einstellungen
         override val freshArticles: PagingSource<Int, ArticleWithFeed>
             get() {
                 val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                return articlesRepository.getAllArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
+                return articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
             }
 
         override val allArticles: PagingSource<Int, ArticleWithFeed>

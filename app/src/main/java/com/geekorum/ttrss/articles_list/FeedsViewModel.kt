@@ -154,7 +154,10 @@ class FeedsViewModel @Inject constructor(
             try {
                 apiService.markFeedAsRead(feed.id)
                 when {
-                    feed.isAllArticlesFeed -> articlesRepository.setAllArticlesUnread(false)
+                    // All virtual feeds that show unread articles should mark all as read
+                    feed.isAllArticlesFeed || feed.isFreshFeed -> articlesRepository.setAllArticlesUnread(false)
+                    feed.isStarredFeed -> articlesRepository.setStarredArticlesUnread(false)
+                    feed.isPublishedFeed -> articlesRepository.setPublishedArticlesUnread(false)
                     else -> articlesRepository.setArticlesUnreadForFeed(feed.id, false)
                 }
                 refreshFeeds()

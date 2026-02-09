@@ -138,6 +138,14 @@ class ArticlesRepository
         articleDao.updateArticleUnreadForFeed(feedId, newValue)
     }
 
+    suspend fun setStarredArticlesUnread(newValue: Boolean) {
+        articleDao.updateStarredArticlesUnread(newValue)
+    }
+
+    suspend fun setPublishedArticlesUnread(newValue: Boolean) {
+        articleDao.updatePublishedArticlesUnread(newValue)
+    }
+
     fun searchArticles(query: String): PagingSource<Int, ArticleWithFeed> {
         return articleDao.searchArticles(query)
     }

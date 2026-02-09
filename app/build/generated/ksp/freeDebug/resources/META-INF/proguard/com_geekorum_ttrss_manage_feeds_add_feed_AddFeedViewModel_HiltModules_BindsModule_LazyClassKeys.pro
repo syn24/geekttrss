@@ -1,1 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.geekorum.ttrss.manage_feeds.add_feed.AddFeedViewModel

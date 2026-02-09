@@ -1,1 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.geekorum.ttrss.articles_list.ActivityViewModel

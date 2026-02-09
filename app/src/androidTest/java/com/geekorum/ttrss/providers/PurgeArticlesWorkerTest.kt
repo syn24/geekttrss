@@ -27,8 +27,9 @@ import androidx.work.ListenableWorker
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import androidx.work.testing.TestWorkerBuilder
+import androidx.work.testing.TestListenableWorkerBuilder
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -39,7 +40,7 @@ import kotlin.test.Test
 @RunWith(AndroidJUnit4::class)
 class PurgeArticlesWorkerTest {
     lateinit var applicationContext: Context
-    lateinit var workerBuilder : TestWorkerBuilder<PurgeArticlesWorker>
+    lateinit var workerBuilder : TestListenableWorkerBuilder<PurgeArticlesWorker>
     lateinit var executor: Executor
 
     @BeforeTest
@@ -47,9 +48,9 @@ class PurgeArticlesWorkerTest {
         applicationContext = ApplicationProvider.getApplicationContext()
         executor = Executors.newSingleThreadExecutor()
         val purgeArticlesDao = object : PurgeArticlesDao {
-            override fun deleteNonImportantArticlesBeforeTime(beforeTimeSec: Long) = 0
+            override suspend fun deleteNonImportantArticlesBeforeTime(beforeTimeSec: Long) = 0
         }
-        workerBuilder = TestWorkerBuilder(applicationContext, executor)
+        workerBuilder = TestListenableWorkerBuilder(applicationContext)
         workerBuilder.setWorkerFactory(object: WorkerFactory() {
             override fun createWorker(
                 appContext: Context, workerClassName: String, workerParameters: WorkerParameters
@@ -61,7 +62,7 @@ class PurgeArticlesWorkerTest {
     @Test
     fun testSuccessfulWorker() {
         val worker = workerBuilder.build()
-        val result = worker.doWork()
+        val result = runBlocking { worker.doWork() }
         assertThat(result).isEqualTo(Result.success())
     }
 }
