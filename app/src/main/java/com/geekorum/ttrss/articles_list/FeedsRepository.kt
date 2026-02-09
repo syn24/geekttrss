@@ -39,7 +39,7 @@ class FeedsRepository
     private val articlesRepository: ArticlesRepository
 ) {
     private val freshUnreadCount: Flow<Int> = articlesRepository.getFreshUnreadCount()
-    private val allArticlesCount: Flow<Int> = articlesRepository.getAllArticlesCount()
+    private val allArticlesCount: Flow<Int> = articlesRepository.getAllUnreadArticlesCount()
     private val allStarredCount: Flow<Int> = articlesRepository.getAllStarredArticlesCount()
 
     val allUnreadFeeds: Flow<List<FeedWithFavIcon>> =
@@ -72,7 +72,7 @@ class FeedsRepository
             feed = Feed.createVirtualFeedForId(Feed.FEED_ID_STARRED, starredCount),
             favIcon = null)
 
-        return listOf(freshArticles, allArticles, starredArticles, *feeds.toTypedArray())
+        return listOf(allArticles, freshArticles, starredArticles, *feeds.toTypedArray())
     }
 
     fun getUnreadFeedsForCategory(catId: Long): Flow<List<Feed>> {

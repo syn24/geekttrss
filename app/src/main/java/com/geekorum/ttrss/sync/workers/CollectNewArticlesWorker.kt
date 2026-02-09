@@ -46,6 +46,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import timber.log.Timber
 import java.io.IOException
 
+import java.util.concurrent.TimeUnit
+
 /**
  * Collect all the new articles from a feed
  */
@@ -87,76 +89,48 @@ class CollectNewArticlesWorker @AssistedInject constructor(
     }
 
     @Throws(ApiCallException::class, RemoteException::class, OperationApplicationException::class)
-    private suspend fun collectNewArticles() {
+    private suspend fun collectNewArticles() = coroutineScope {
+        Timber.i("Collecting new articles for feed $feedId (limit 1 day)")
         val latestId = getLatestArticleId()
 
-        val articles = getArticles(feedId, latestId, 0)
-        val latestReceivedId = articles.maxByOrNull { it.article.id }?.article?.id
-        val difference = (latestReceivedId ?: latestId) - latestId
-        if (difference > 1000) {
-            collectNewArticlesGradually()
-        } else {
-            collectNewArticlesFully()
+        var offset = 0
+        var totalFetched = 0
+        val maxArticlesToFetch = 1000
+        val oneDayAgo = System.currentTimeMillis() / 1000 - TimeUnit.DAYS.toSeconds(1)
+
+        // Fetch newest articles first (gradually=false)
+        var articlesRaw = getArticles(feedId, latestId, offset,
+            includeAttachments = true, gradually = false)
+
+        while (articlesRaw.isNotEmpty() && totalFetched < maxArticlesToFetch) {
+            // Filter out articles older than 1 day
+            val recentArticles = articlesRaw.filter { it.article.lastTimeUpdate >= oneDayAgo }
+
+            if (recentArticles.isNotEmpty()) {
+                databaseService.runInTransaction {
+                    insertArticles(recentArticles)
+                }
+                totalFetched += recentArticles.size
+            }
+
+            // Check if we reached the end of the "fresh" window
+            // If the last article in the batch is older than 1 day, we can stop
+            val oldestInBatch = articlesRaw.minByOrNull { it.article.lastTimeUpdate }?.article?.lastTimeUpdate ?: 0
+            if (oldestInBatch < oneDayAgo) {
+                Timber.i("Reached articles older than 1 day. Stopping sync for feed $feedId.")
+                break
+            }
+
+            offset += articlesRaw.size
+
+            if (totalFetched < maxArticlesToFetch) {
+                articlesRaw = getArticles(feedId, latestId, offset, includeAttachments = true, gradually = false)
+            }
         }
     }
 
     private suspend fun getLatestArticleId(): Long {
         return databaseService.getLatestArticleIdFromFeed(feedId) ?: 0
-    }
-
-    /**
-     * Attempt to collect all new articles before committing the transaction.
-     * Good if there are not too many of them
-     */
-    @Throws(ApiCallException::class, RemoteException::class, OperationApplicationException::class)
-    private suspend fun collectNewArticlesFully() = coroutineScope {
-        Timber.i("Collecting new articles fully for feed $feedId")
-        val latestId = getLatestArticleId()
-
-        var offset = 0
-        val allArticles = mutableListOf<ArticleWithAttachments>()
-
-        // Collect all articles first
-        var articles = getArticles(feedId, latestId, offset, includeAttachments = true)
-        while (articles.isNotEmpty()) {
-            allArticles.addAll(articles)
-            offset += articles.size
-            articles = getArticles(feedId, latestId, offset, includeAttachments = true)
-        }
-
-        // Single transaction for all inserts - much faster
-        databaseService.runInTransaction {
-            insertArticles(allArticles)
-        }
-
-        // Cache images after transaction completes (optional, can be skipped for speed)
-        // cacheArticlesImages(allArticles.map { it.article })
-    }
-
-    /**
-     * Attempt to collect all new articles gradually.
-     * The transaction will be commit for each network request.
-     * This allows to save them but they must be collected from id 0 to latest, in order to
-     * maintain the contract around getLatestArticleId()
-     * As the web api doesn't allow to sort by id, we sort by reverse date which is the closest approximation
-     */
-    private suspend fun collectNewArticlesGradually() = coroutineScope {
-        Timber.i("Collecting new articles gradually for feed $feedId")
-        val latestId = getLatestArticleId()
-
-        var offset = 0
-        var articles = getArticles(feedId, latestId, offset,
-            includeAttachments = true, gradually = true)
-        while (articles.isNotEmpty()) {
-            databaseService.runInTransaction {
-                insertArticles(articles)
-            }
-            // Image caching disabled during sync for better performance
-            // Images will be loaded on-demand when articles are opened
-            // cacheArticlesImages(articles.map { it.article })
-            offset += articles.size
-            articles = getArticles(feedId, latestId, offset, includeAttachments = true, gradually = true)
-        }
     }
 
     private suspend fun insertArticles(articles: List<ArticleWithAttachments>) {

@@ -1,0 +1,1 @@
+[{"navFile":"src\\main\\res\\navigation\\add_feed_installer.xml","javaFiles":["com.geekorum.ttrss.add_feed.StartInstallFragmentDirections","com.geekorum.ttrss.manage_feeds.add_feed.CompleteInstallFragmentDirections","com.geekorum.ttrss.manage_feeds.add_feed.AddFeedActivityArgs"]}]

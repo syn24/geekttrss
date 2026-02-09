@@ -104,6 +104,8 @@ object NetworkModule {
                     .directory(application.cacheDir.resolve("image_cache"))
                     .build()
             }
+            // Disable hardware bitmaps to avoid issues with some codecs/emulators and potential ANRs during scroll
+            .allowHardware(false)
             .okHttpClient {
                 val socketFactory = TaggedSocketFactory(okHttpClient.socketFactory, TAG_COIL)
                 okHttpClient.newBuilder()

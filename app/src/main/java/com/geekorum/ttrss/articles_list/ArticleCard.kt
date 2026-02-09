@@ -238,6 +238,7 @@ private fun TitleWithImage(
 
             val imageReq = ImageRequest.Builder(LocalContext.current)
                 .data(finalImageUrl)
+                .size(1024) // Limit image size to avoid OOM on large bitmaps, 1024px width is sufficient for cards
                 .listener(onError = { _, _ -> hasImage = false})
                 .build()
             AsyncImage(model = imageReq,

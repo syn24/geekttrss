@@ -145,6 +145,9 @@ interface ArticleDao {
     @Query("SELECT COUNT(*) FROM articles")
     fun getAllArticlesCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM articles WHERE unread=1")
+    fun getAllUnreadArticlesCount(): Flow<Int>
+
     @Query("SELECT COUNT(*) FROM articles WHERE marked=1")
     fun getAllStarredArticlesCount(): Flow<Int>
 

@@ -1,0 +1,180 @@
+/*
+ * Geekttrss is a RSS feed reader application on the Android Platform.
+ *
+ * Copyright (C) 2017-2025 by Frederic-Charles Barthelery.
+ *
+ * This file is part of Geekttrss.
+ *
+ * Geekttrss is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Geekttrss is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Geekttrss.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package com.geekorum.ttrss.manage_feeds.add_feed
+
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.geekorum.ttrss.session.SessionActivity
+import com.geekorum.ttrss.R
+import com.geekorum.ttrss.ui.AppTheme3
+import dagger.hilt.android.AndroidEntryPoint
+
+
+@AndroidEntryPoint
+class SubscribeToFeedActivity : SessionActivity() {
+
+    private val viewModel: SubscribeToFeedViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            AppTheme3 {
+                val navController = rememberNavController()
+                val currentBackStackEntry by navController.currentBackStackEntryAsState()
+                val destination = currentBackStackEntry?.destination
+
+                SubscribeToFeedScaffold(
+                    bottomBar = {
+                        val cancelTxtId = when  {
+                            destination?.hasRoute<EnterFeedUrlDestination>() == true -> R.string.activity_subscribe_feed_btn_cancel
+                            else -> R.string.activity_subscribe_feed_btn_back
+                        }
+                        val nextTxtId = when  {
+                            destination?.hasRoute<DisplayErrorDestination>() == true -> R.string.activity_subscribe_feed_btn_close
+                            else -> R.string.activity_subscribe_feed_btn_subscribe
+                        }
+                        BottomButtonBar(
+                            modifier = Modifier.imePadding(),
+                            nextTxtId = nextTxtId,
+                            cancelTxtId = cancelTxtId, onCancelClick = {
+                                if (!navController.popBackStack()) {
+                                    finish()
+                                }
+                            },
+                            onNextClick = {
+                                when {
+                                    destination?.hasRoute<EnterFeedUrlDestination>() == true -> {
+                                        viewModel.submitUrl(viewModel.urlTyped)
+                                    }
+                                    destination?.hasRoute<SelectFeedDestination>() == true -> {
+                                        if (viewModel.selectedFeed != null) {
+                                            viewModel.subscribeToFeed(viewModel.selectedFeed!!.toFeedInformation())
+                                            finish()
+                                        }
+                                    }
+                                    destination?.hasRoute<DisplayErrorDestination>() == true -> finish()
+                                    else -> Unit
+                                }
+                            })
+                    }) {
+                    SubscribeToFeedNavHost(
+                        modifier = Modifier.padding(it),
+                        viewModel = viewModel,
+                        navController = navController,
+                        finishActivity = {
+                            finish()
+                        }
+                    )
+                    SideEffect {
+                        if (destination?.hasRoute<EnterFeedUrlDestination>() == true) {
+                            viewModel.resetAvailableFeeds()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun BottomButtonBar(
+    @StringRes cancelTxtId: Int,
+    @StringRes nextTxtId: Int,
+    onCancelClick: () -> Unit, onNextClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier.padding(8.dp)) {
+        TextButton(onClick = onCancelClick) {
+            Text(stringResource(cancelTxtId))
+        }
+        Spacer(Modifier.weight(1f))
+        Button(onClick = onNextClick) {
+            Text(stringResource(nextTxtId))
+        }
+    }
+}
+
+
+
+@Composable
+private fun SubscribeToFeedScaffold(
+    bottomBar: @Composable () -> Unit,
+    content: @Composable (PaddingValues) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            LargeTitleBar()
+        },
+        bottomBar = {
+            Box(Modifier.navigationBarsPadding()) {
+                bottomBar()
+            }
+        },
+        content = content
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LargeTitleBar() {
+    LargeTopAppBar(
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+        ),
+        title = {
+        Text(
+            stringResource(R.string.activity_add_feed_title),
+            modifier = Modifier
+                .padding(start = 32.dp)
+                .paddingFromBaseline(bottom = 28.dp),
+        ) })
+}
+
+@Preview
+@Composable
+private fun PreviewSubscribeToFeedScaffold() {
+    AppTheme3 {
+        SubscribeToFeedScaffold(bottomBar = {
+            BottomButtonBar(
+                cancelTxtId = R.string.activity_subscribe_feed_btn_cancel,
+                nextTxtId = R.string.activity_subscribe_feed_btn_subscribe,
+                onCancelClick = {}, onNextClick = {}
+            )
+        }) {}
+    }
+}

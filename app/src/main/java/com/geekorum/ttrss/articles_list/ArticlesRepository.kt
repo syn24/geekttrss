@@ -155,6 +155,10 @@ class ArticlesRepository
         return articleDao.getAllArticlesCount()
     }
 
+    fun getAllUnreadArticlesCount(): Flow<Int> {
+        return articleDao.getAllUnreadArticlesCount()
+    }
+
     fun getAllStarredArticlesCount(): Flow<Int> {
         return articleDao.getAllStarredArticlesCount()
     }

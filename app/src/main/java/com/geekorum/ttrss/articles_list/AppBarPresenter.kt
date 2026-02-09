@@ -140,7 +140,15 @@ internal class AppBarPresenter(
                     currentDestination = currentDestination,
                     onNavigationMenuClick = onNavigationMenuClick,
                     onSearchClick = { navController.navigateToSearch() },
-                    markAsRead = { feedsViewModel.markFeedAsRead(Feed(FEED_ID_ALL_ARTICLES)) },
+                    markAsRead = {
+                        val destination = currentDestination?.destination
+                        val feedId = if (destination?.hasRoute<NavRoutes.ArticlesList>() == true) {
+                            currentDestination?.toRoute<NavRoutes.ArticlesList>()?.feedId ?: FEED_ID_ALL_ARTICLES
+                        } else {
+                            FEED_ID_ALL_ARTICLES
+                        }
+                        feedsViewModel.markFeedAsRead(Feed(feedId))
+                    },
                     scrollBehavior = scrollBehavior
                 )
             }

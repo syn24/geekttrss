@@ -158,6 +158,7 @@ fun CompactArticleListItem(
 
             val imageReq = ImageRequest.Builder(LocalContext.current)
                 .data(finalImageUrl)
+                .size(256) // Limit thumbnail size to avoid loading full res images
                 .build()
             val contentColor = LocalContentColor.current
             val fallback = forwardingPainter(

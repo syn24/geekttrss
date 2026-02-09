@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.geekorum.ttrss.app-mergeFreeDebugResources-101:/values-h320dp-port-v13/values-h320dp-port-v13.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\sandra\\.gradle\\caches\\8.14.3\\transforms\\43c4f659a35d0d6721fd0e90b9f6f65e\\transformed\\material-1.13.0\\res\\values-h320dp-port-v13\\values-h320dp-port-v13.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "63",
+                        "endOffsets": "114"
+                    }
+                }
+            ]
+        }
+    ]
+}

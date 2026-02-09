@@ -1,0 +1,28 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.geekorum.ttrss.app-mergeFreeDebugResources-101:/values-v29/values-v29.xml",
+            "map": [
+                {
+                    "source": "D:\\Image\\Dev\\geekttrss\\app\\src\\main\\res\\values-v29\\styles.xml",
+                    "from": {
+                        "startLines": "30,24",
+                        "startColumns": "4,4",
+                        "startOffsets": "1246,904",
+                        "endLines": "34,28",
+                        "endColumns": "12,12",
+                        "endOffsets": "1560,1238"
+                    },
+                    "to": {
+                        "startLines": "2,7",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,370",
+                        "endLines": "6,11",
+                        "endColumns": "12,12",
+                        "endOffsets": "365,700"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.geekorum.ttrss.in_app_update.InAppUpdateViewModel

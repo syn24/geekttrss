@@ -43,8 +43,7 @@ private const val TAG = "StrictMode"
 class StrictModeInitializer : Initializer<Unit> {
     private val listenerExecutor by lazy { Executors.newSingleThreadExecutor() }
 
-    @delegate:RequiresApi(Build.VERSION_CODES.P)
-    private val violationListener: ViolationListener by lazy { @Suppress("NewApi") ViolationListener() }
+    private val violationListener: ViolationListener by lazy { ViolationListener() }
 
     override fun create(context: Context) {
         initialize()
@@ -64,35 +63,26 @@ class StrictModeInitializer : Initializer<Unit> {
                 if (BuildConfig.FLAVOR != "google") {
                     detectUntaggedSockets()
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    // appcompat use nonsdk
-//                        detectNonSdkApiUsage()
-                }
+                // appcompat use nonsdk
+                // detectNonSdkApiUsage()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     detectUnsafeIntentLaunch()
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    penaltyListener(listenerExecutor, violationListener)
-                } else {
-                    penaltyLog()
-                }
+                penaltyListener(listenerExecutor, violationListener)
             }
             .build())
 
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder()
-            .detectAll()
+            .detectNetwork()
+            // .detectDiskReads() // Disabled to prevent crashes on legitimate DB reads on startup
+            // .detectDiskWrites() // Disabled to prevent crashes on Keystore usage
             .apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    penaltyListener(listenerExecutor, violationListener)
-                } else {
-                    penaltyLog()
-                }
+                penaltyListener(listenerExecutor, violationListener)
             }
             .build())
     }
 
-    @RequiresApi(Build.VERSION_CODES.P)
-    private inner class ViolationListener : StrictMode.OnThreadViolationListener, StrictMode.OnVmViolationListener {
+    private class ViolationListener : StrictMode.OnThreadViolationListener, StrictMode.OnVmViolationListener {
         override fun onThreadViolation(v: Violation) = onViolation(v)
 
         override fun onVmViolation(v: Violation) = onViolation(v)

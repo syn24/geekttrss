@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.geekorum.ttrss.settings.manage_features.ManageFeaturesViewModel
