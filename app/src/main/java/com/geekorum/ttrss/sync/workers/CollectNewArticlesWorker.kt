@@ -90,21 +90,26 @@ class CollectNewArticlesWorker @AssistedInject constructor(
 
     @Throws(ApiCallException::class, RemoteException::class, OperationApplicationException::class)
     private suspend fun collectNewArticles() = coroutineScope {
-        Timber.i("Collecting new articles for feed $feedId (limit 1 day)")
+        val isFreshFeed = feedId == -3L
+        // For Fresh Articles (-3), we want all unread items regardless of age.
+        // For All Articles (-4) and regular feeds, we limit to 1 day to handle the "catch up" scenario without downloading history.
+        val cutoffTime = if (isFreshFeed) 0L else System.currentTimeMillis() / 1000 - TimeUnit.DAYS.toSeconds(1)
+        val limitDescription = if (isFreshFeed) "no time limit" else "limit 1 day"
+
+        Timber.i("Collecting new articles for feed $feedId ($limitDescription)")
         val latestId = getLatestArticleId()
 
         var offset = 0
         var totalFetched = 0
         val maxArticlesToFetch = 1000
-        val oneDayAgo = System.currentTimeMillis() / 1000 - TimeUnit.DAYS.toSeconds(1)
 
         // Fetch newest articles first (gradually=false)
         var articlesRaw = getArticles(feedId, latestId, offset,
             includeAttachments = true, gradually = false)
 
         while (articlesRaw.isNotEmpty() && totalFetched < maxArticlesToFetch) {
-            // Filter out articles older than 1 day
-            val recentArticles = articlesRaw.filter { it.article.lastTimeUpdate >= oneDayAgo }
+            // Filter out articles older than cutoff (only applies to non-Fresh feeds)
+            val recentArticles = articlesRaw.filter { it.article.lastTimeUpdate >= cutoffTime }
 
             if (recentArticles.isNotEmpty()) {
                 databaseService.runInTransaction {
@@ -114,10 +119,14 @@ class CollectNewArticlesWorker @AssistedInject constructor(
             }
 
             // Check if we reached the end of the "fresh" window
-            // If the last article in the batch is older than 1 day, we can stop
+            // If the last article in the batch is older than cutoff, we can stop (unless it's Fresh feed where we want all)
             val oldestInBatch = articlesRaw.minByOrNull { it.article.lastTimeUpdate }?.article?.lastTimeUpdate ?: 0
-            if (oldestInBatch < oneDayAgo) {
-                Timber.i("Reached articles older than 1 day. Stopping sync for feed $feedId.")
+
+            // For regular feeds, stop if we hit old articles.
+            // For fresh feed, we technically could stop if we hit something older than we care about,
+            // but user said "fetch all unread", so we continue until maxArticlesToFetch is hit or API is empty.
+            if (!isFreshFeed && oldestInBatch < cutoffTime) {
+                Timber.i("Reached articles older than cutoff. Stopping sync for feed $feedId.")
                 break
             }
 
