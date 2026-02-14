@@ -2,3 +2,4 @@
 /app/build/
 /app/free/
 .idea/
+/buildSrc/
