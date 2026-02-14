@@ -1,5 +1,30 @@
-/build/
-/app/build/
+# Gradle files
+.gradle/
+build/
+**/build/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+
+# Android Studio local configuration
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# Built flavors (as you requested)
 /app/free/
-/buildSrc/
-/.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets & Keys
+*.jks
+*.keystore
+*.google-services.json

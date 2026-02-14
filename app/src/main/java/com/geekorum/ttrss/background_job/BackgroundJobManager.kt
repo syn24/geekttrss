@@ -103,7 +103,8 @@ class BackgroundJobManager @Inject constructor(
         const val PERIODIC_PURGE_JOB = "periodic_purge"
 
         val PERIODIC_PURGE_JOB_INTERVAL_MILLIS = TimeUnit.DAYS.toMillis(1)
-        val PERIODIC_REFRESH_JOB_INTERVAL_S = TimeUnit.HOURS.toSeconds(2)
+        // Periodic background sync every 30 minutes
+        val PERIODIC_REFRESH_JOB_INTERVAL_S = TimeUnit.MINUTES.toSeconds(30)
         val PERIODIC_FULL_REFRESH_JOB_INTERVAL_S = TimeUnit.DAYS.toSeconds(1)
     }
 }
@@ -140,10 +141,12 @@ private open class BackgroundJobManagerImpl internal constructor(
     }
 
     fun refresh(account: Account) {
+        Timber.i("BackgroundJobManager.refresh() called for account ${account.name}")
         val extras = Bundle()
         // Always update feed icons on manual refresh to ensure they're loaded
         extras.putBoolean(SyncContract.EXTRA_UPDATE_FEED_ICONS, true)
         requestSync(account, extras)
+        Timber.i("BackgroundJobManager.refresh() - requestSync called")
     }
 
     suspend fun refreshFeed(account: Account, feedId: Long): String {
