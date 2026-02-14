@@ -32,6 +32,7 @@ import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 import dagger.hilt.android.qualifiers.ApplicationContext;
+import timber.log.Timber;
 
 /**
  * Allows the Android Sync Framework to synchronize Articles of Tiny Tiny Rss.
@@ -44,6 +45,7 @@ public class ArticleSyncAdapter extends CancellableSyncAdapter {
     public ArticleSyncAdapter(@ApplicationContext Context context, SyncComponent.Builder syncBuilder) {
         super(context, true, false); //no parallel sync for now
         this.syncBuilder = syncBuilder;
+        Timber.i("ArticleSyncAdapter created");
     }
 
     @NonNull
@@ -51,6 +53,7 @@ public class ArticleSyncAdapter extends CancellableSyncAdapter {
     public CancellableSync createCancellableSync(@NonNull Account account, @NonNull Bundle extras,
                                                  @NonNull String authority, @NonNull ContentProviderClient provider,
                                                  @NonNull SyncResult syncResult) {
+        Timber.i("ArticleSyncAdapter.createCancellableSync called for account: " + account.name);
         SyncComponent syncComponent = syncBuilder
                 .seedAccount(account)
                 .build();

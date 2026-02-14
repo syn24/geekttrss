@@ -97,25 +97,32 @@ class CollectNewArticlesWorker @AssistedInject constructor(
         val limitDescription = if (isFreshFeed) "no time limit" else "limit 1 day"
 
         Timber.i("Collecting new articles for feed $feedId ($limitDescription)")
-        val latestId = getLatestArticleId()
+
+        // Use sinceId=0 to get all articles, then filter by time locally.
+        // This ensures we don't miss articles if article IDs are not monotonically increasing.
+        val sinceId = 0L
+        Timber.d("Feed $feedId: Using sinceId=$sinceId (fetching all recent articles)")
 
         var offset = 0
         var totalFetched = 0
         val maxArticlesToFetch = 1000
 
         // Fetch newest articles first (gradually=false)
-        var articlesRaw = getArticles(feedId, latestId, offset,
+        var articlesRaw = getArticles(feedId, sinceId, offset,
             includeAttachments = true, gradually = false)
+        Timber.d("Feed $feedId: First batch returned ${articlesRaw.size} articles from API (sinceId=$sinceId, offset=$offset)")
 
         while (articlesRaw.isNotEmpty() && totalFetched < maxArticlesToFetch) {
             // Filter out articles older than cutoff (only applies to non-Fresh feeds)
             val recentArticles = articlesRaw.filter { it.article.lastTimeUpdate >= cutoffTime }
+            Timber.d("Feed $feedId: After cutoff filter: ${recentArticles.size} articles (cutoffTime=$cutoffTime)")
 
             if (recentArticles.isNotEmpty()) {
                 databaseService.runInTransaction {
                     insertArticles(recentArticles)
                 }
                 totalFetched += recentArticles.size
+                Timber.d("Feed $feedId: Inserted ${recentArticles.size} articles, total fetched: $totalFetched")
             }
 
             // Check if we reached the end of the "fresh" window
@@ -133,7 +140,7 @@ class CollectNewArticlesWorker @AssistedInject constructor(
             offset += articlesRaw.size
 
             if (totalFetched < maxArticlesToFetch) {
-                articlesRaw = getArticles(feedId, latestId, offset, includeAttachments = true, gradually = false)
+                articlesRaw = getArticles(feedId, sinceId, offset, includeAttachments = true, gradually = false)
             }
         }
     }

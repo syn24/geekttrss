@@ -72,10 +72,14 @@ class ArticleSynchronizer @AssistedInject constructor(
     private var updateStatusJobsTag: String? = null
 
     override suspend fun sync() {
+        Timber.i("ArticleSynchronizer.sync() started")
         try {
             syncInfoAndFeeds()
+            Timber.i("ArticleSynchronizer: syncInfoAndFeeds completed")
             collectNewArticles()
+            Timber.i("ArticleSynchronizer: collectNewArticles completed")
             updateArticlesStatus()
+            Timber.i("ArticleSynchronizer: updateArticlesStatus completed")
         } catch (e: ApiCallException) {
             Timber.w(e, "unable to synchronize articles")
         } catch (e: RemoteException) {
@@ -86,6 +90,7 @@ class ArticleSynchronizer @AssistedInject constructor(
             Timber.log(if (e is CancellationException) Log.WARN else Log.ERROR,
                 e,"unable to synchronize articles")
         }
+        Timber.i("ArticleSynchronizer.sync() finished")
     }
 
     private suspend fun syncInfoAndFeeds() {
@@ -135,12 +140,21 @@ class ArticleSynchronizer @AssistedInject constructor(
     }
 
     private suspend fun collectNewArticles() {
+        Timber.i("collectNewArticles: Starting...")
         val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
+        val feeds = databaseService.getFeeds()
+        Timber.i("collectNewArticles: Found ${feeds.size} feeds in database")
+
+        if (feeds.isEmpty()) {
+            Timber.w("collectNewArticles: No feeds found in database! Skipping article collection.")
+            return
+        }
+
         val tag = UUID.randomUUID().toString()
-        val jobRequests = databaseService.getFeeds()
+        val jobRequests = feeds
             .filter {
                 if (!isFeedSyncable(it)) {
                     Timber.i("Feed ${'$'}{it.id} - ${'$'}{it.title} is not syncable. don't collect new articles")
@@ -158,6 +172,8 @@ class ArticleSynchronizer @AssistedInject constructor(
                     .build()
             }
         collectNewArticlesJobsTag = tag
+
+        Timber.i("collectNewArticles: Enqueuing ${jobRequests.size} CollectNewArticlesWorker jobs")
 
         if (jobRequests.isNotEmpty()) {
             workManager.enqueue(jobRequests).await()
