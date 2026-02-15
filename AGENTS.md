@@ -24,7 +24,7 @@ Dies ist eine Android-App (GeekTTRSS) - ein Tiny Tiny RSS Client.
 - **Automatisch ausfuehren**: Du darfst jederzeit Terminal-Befehle mit `run_in_terminal` ausfuehren ohne vorher zu fragen
 - **Build-Befehle**: `gradlew`, `adb`, etc. koennen direkt ausgefuehrt werden
 - **Keine Bestaetigung noetig**: Fuehre Befehle direkt aus, wenn sie zur Aufgabe gehoeren
-- **Du bist in einem Windows Terminal, nutze dir und findstr
+- Du bist in einem Windows Terminal, nutze dir und findstr, head und grep gibt es nicht
 
 #### Code-Aenderungen
 - **Direkt implementieren**: Nutze `replace_string_in_file` oder `insert_edit_into_file` statt Code-Bloecke zu zeigen

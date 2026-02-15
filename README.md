@@ -65,5 +65,15 @@ Just use Gradle to build
 - JDK 17 (recommended for newer Android Gradle Plugins)
 - Android Studio
 
+Test instructions
+=============================
 
+# Einzelnen Test ausführen
+gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testLogin"
+
+# Performance-Benchmark ausführen
+gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testPerformanceBenchmark"
+
+# Alle Integrationstests ausführen
+gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest"
 
