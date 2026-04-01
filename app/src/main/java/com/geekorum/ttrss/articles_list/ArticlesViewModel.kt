@@ -44,12 +44,15 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -84,6 +87,26 @@ abstract class BaseArticlesViewModel(
 
     protected val sortByMostRecentFirst = MutableStateFlow(false)
     protected val needUnread = MutableStateFlow(false)
+
+    /**
+     * Bumped to force creation of a new [Pager] in subclasses.
+     * [articles.refresh()][LazyPagingItems.refresh] only invalidates the current
+     * [PagingSource] which doesn't always propagate through `flatMapLatest + cachedIn`.
+     * Including this in the `combine` that feeds `flatMapLatest` guarantees a brand-new
+     * [PagingSource] is created and the list reloads from the database.
+     */
+    private val refreshTrigger = MutableStateFlow(0)
+
+    /** Exposed to [combine] in subclass article flows. */
+    protected val refreshSignal: StateFlow<Int> get() = refreshTrigger
+
+    /**
+     * Call after external data changes (e.g. sync completion) to force the article
+     * list to reload from the database with a new [PagingSource].
+     */
+    fun notifyDataChanged() {
+        refreshTrigger.value++
+    }
 
     fun setSortByMostRecentFirst(mostRecentFirst: Boolean) {
         sortByMostRecentFirst.value = mostRecentFirst
@@ -238,7 +261,7 @@ abstract class BaseArticlesViewModel(
 /**
  * ViewModel for [ArticlesListScreen]
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel(assistedFactory = ArticlesListViewModel.Factory::class)
 class ArticlesListViewModel @AssistedInject constructor(
     @Assisted val feedId: Long,
@@ -283,6 +306,21 @@ class ArticlesListViewModel @AssistedInject constructor(
         }
     }
 
+    init {
+        // Observe article count changes as a reliable, universal refresh trigger.
+        // Room's Flow<Int> count queries fire immediately when the articles table
+        // changes — unlike PagingSource invalidation which gets lost in the
+        // flatMapLatest + cachedIn chain. When the count changes (from ANY source:
+        // SyncAdapter, WorkManager, or direct DB writes), bump refreshSignal to
+        // create a brand-new PagingSource. drop(1) skips the initial replay.
+        // debounce(300) batches rapid changes (e.g. during sync) into one reload.
+        viewModelScope.launch {
+            articleCount.drop(1).debounce(300).collect {
+                notifyDataChanged()
+            }
+        }
+    }
+
     private val refreshJobName = MutableStateFlow<String?>(null)
 
     private val account = component.account
@@ -298,9 +336,9 @@ class ArticlesListViewModel @AssistedInject constructor(
         // For Fresh feed, combine with shared freshTimeSec so time parameter
         // matches the count query. For other feeds, only react to sort order changes.
         val paramsFlow = if (feed.id == Feed.FEED_ID_FRESH) {
-            combine(sortByMostRecentFirst, articlesRepository.freshTimeSec) { sort, time -> sort to time }
+            combine(sortByMostRecentFirst, articlesRepository.freshTimeSec, refreshSignal) { sort, time, _ -> sort to time }
         } else {
-            sortByMostRecentFirst.map { sort -> sort to 0L }
+            combine(sortByMostRecentFirst, refreshSignal) { sort, _ -> sort to 0L }
         }
 
         return paramsFlow.flatMapLatest { (mostRecentFirst, freshTime) ->
@@ -376,6 +414,18 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
     override val isRefreshing = SyncInProgressLiveData(account, ArticlesContract.AUTHORITY).asFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    init {
+        // Tag views have no article count query to observe, so observe
+        // the SyncAdapter state directly and refresh when sync completes.
+        viewModelScope.launch {
+            isRefreshing.drop(1).collect { syncing ->
+                if (!syncing) {
+                    notifyDataChanged()
+                }
+            }
+        }
+    }
+
     override fun refresh() {
         if (isRefreshing.value) return
         backgroundJobManager.refresh(account)
@@ -387,7 +437,8 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
         val needUnreadFlow = needUnread
         return combine(isMostRecentOrderFlow, needUnreadFlow, articlesRepository.freshTimeSec) { mostRecentFirst, needUnread, freshTime ->
             getArticleAccess(mostRecentFirst, needUnread, freshTime)
-        }.flatMapLatest { access ->
+        }.combine(refreshSignal) { access, _ -> access }
+        .flatMapLatest { access ->
             val config = PagingConfig(pageSize = 50)
             val pager = Pager(config) {
                 access.articlesForTag(tag)

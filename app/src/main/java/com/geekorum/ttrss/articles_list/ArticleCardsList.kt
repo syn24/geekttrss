@@ -146,27 +146,17 @@ fun ArticleCardList(
         }
     }
 
-    // When a sync completes, force the paging data to reload from the DB.
-    // Room's PagingSource invalidation does not always propagate reliably through
-    // the cachedIn + flatMapLatest chain, while the reactive Flow<Int> for the
-    // navigation counter updates correctly. This ensures the list stays in sync.
+    // When a sync completes, force a new PagingSource to be created at the ViewModel
+    // level. Calling articles.refresh() only invalidates the current PagingSource,
+    // which doesn't always propagate through the flatMapLatest + cachedIn chain.
+    // notifyDataChanged() bumps a trigger that makes flatMapLatest create a brand-new
+    // Pager, reliably reloading from the database.
     var wasSyncing by remember { mutableStateOf(isRefreshing) }
     LaunchedEffect(isRefreshing) {
         val syncJustCompleted = wasSyncing && !isRefreshing
         wasSyncing = isRefreshing
         if (syncJustCompleted) {
-            articles.refresh()
-        }
-    }
-
-    // Use the articleCount Flow as a reliable refresh trigger. Room Flow<Int> count
-    // queries update immediately when the articles table changes, but the PagingSource
-    // may not invalidate through cachedIn + flatMapLatest. When the count changes,
-    // force the PagingSource to reload so the list always matches the count.
-    val articleCount by viewModel.articleCount.collectAsStateWithLifecycle()
-    LaunchedEffect(articleCount) {
-        if (articleCount > 0 && articles.itemCount != articleCount) {
-            articles.refresh()
+            viewModel.notifyDataChanged()
         }
     }
 
