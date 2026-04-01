@@ -62,6 +62,22 @@ abstract class FeedArticlesWorker(
         return articles
     }
 
+    @Throws(ApiCallException::class)
+    protected suspend fun getUnreadArticles(
+            feedId: Long, offset: Int,
+            showExcerpt: Boolean = true,
+            showContent: Boolean = true,
+            includeAttachments: Boolean = false
+    ): List<ArticleWithAttachments> {
+        val articles = apiService.getUnreadArticles(feedId, offset, showExcerpt, showContent, includeAttachments)
+        if (showContent) {
+            articles.forEach {
+                augmentArticle(it)
+            }
+        }
+        return articles
+    }
+
     private fun augmentArticle(articleWithAttachments: ArticleWithAttachments): ArticleWithAttachments {
         with(articleWithAttachments.article) {
             val augmenter = ArticleAugmenter(this)

@@ -18,7 +18,7 @@
 # along with Geekttrss.  If not, see <http://www.gnu.org/licenses/>.
 #
 [versions]
-# AGP 8.12.3 - Issue https://issuetracker.google.com/issues/438515318 was fixed
+# AGP 8.13.2 - AGP 9.0 has compatibility issues with SafeArgs and OSS License plugins
 android-gradle-plugin = "8.13.2"
 accompanist = "0.37.3"
 android-desugar-jdk = "2.1.5"

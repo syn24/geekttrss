@@ -76,6 +76,7 @@ abstract class BaseArticlesViewModel(
     abstract val isRefreshing: StateFlow<Boolean>
     abstract val isMultiFeed: StateFlow<Boolean>
     abstract val isAllArticlesFeed: StateFlow<Boolean>
+    abstract val articleCount: StateFlow<Int>
 
     private val unreadActionUndoManager = UndoManager<Action>()
 
@@ -135,15 +136,15 @@ abstract class BaseArticlesViewModel(
         fun articlesForTag(tag: String): PagingSource<Int, ArticleWithFeed>
     }
 
-    protected fun getArticleAccess(mostRecentFirst: Boolean, needUnread: Boolean): ArticlesAccess = when {
-        needUnread && mostRecentFirst -> UnreadMostRecentAccess(articlesRepository)
-        needUnread && !mostRecentFirst -> UnreadOldestAccess(articlesRepository)
-        !needUnread && mostRecentFirst -> MostRecentAccess(articlesRepository)
-        !needUnread && !mostRecentFirst -> OldestFirstAccess(articlesRepository)
-        else -> UnreadMostRecentAccess(articlesRepository)
+    protected fun getArticleAccess(mostRecentFirst: Boolean, needUnread: Boolean, freshTimeSec: Long): ArticlesAccess = when {
+        needUnread && mostRecentFirst -> UnreadMostRecentAccess(articlesRepository, freshTimeSec)
+        needUnread && !mostRecentFirst -> UnreadOldestAccess(articlesRepository, freshTimeSec)
+        !needUnread && mostRecentFirst -> MostRecentAccess(articlesRepository, freshTimeSec)
+        !needUnread && !mostRecentFirst -> OldestFirstAccess(articlesRepository, freshTimeSec)
+        else -> UnreadMostRecentAccess(articlesRepository, freshTimeSec)
     }
 
-    class UnreadMostRecentAccess(private val articlesRepository: ArticlesRepository) : ArticlesAccess {
+    class UnreadMostRecentAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
         override val starredArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllUnreadStarredArticles()
 
@@ -151,10 +152,7 @@ abstract class BaseArticlesViewModel(
             get() = articlesRepository.getAllUnreadPublishedArticles()
 
         override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() {
-                val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                return articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
-            }
+            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
 
         override val allArticles: PagingSource<Int, ArticleWithFeed>
             get() =  articlesRepository.getAllUnreadArticles()
@@ -168,7 +166,7 @@ abstract class BaseArticlesViewModel(
         }
     }
 
-    class UnreadOldestAccess(private val articlesRepository: ArticlesRepository) : ArticlesAccess {
+    class UnreadOldestAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
         override val starredArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllUnreadStarredArticlesOldestFirst()
 
@@ -176,10 +174,7 @@ abstract class BaseArticlesViewModel(
             get() = articlesRepository.getAllUnreadPublishedArticlesOldestFirst()
 
         override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() {
-                val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                return articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
-            }
+            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
 
         override val allArticles: PagingSource<Int, ArticleWithFeed>
             get() =  articlesRepository.getAllUnreadArticlesOldestFirst()
@@ -194,19 +189,15 @@ abstract class BaseArticlesViewModel(
     }
 
 
-    class MostRecentAccess(private val articlesRepository: ArticlesRepository) : ArticlesAccess {
+    class MostRecentAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
         override val starredArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllStarredArticles()
 
         override val publishedArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllPublishedArticles()
 
-        // Fresh Articles: IMMER nur ungelesene Artikel, unabhängig von anderen Einstellungen
         override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() {
-                val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                return articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
-            }
+            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
 
         override val allArticles: PagingSource<Int, ArticleWithFeed>
             get() =  articlesRepository.getAllArticles()
@@ -220,19 +211,15 @@ abstract class BaseArticlesViewModel(
         }
     }
 
-    class OldestFirstAccess(private val articlesRepository: ArticlesRepository) : ArticlesAccess {
+    class OldestFirstAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
         override val starredArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllStarredArticlesOldestFirst()
 
         override val publishedArticles: PagingSource<Int, ArticleWithFeed>
             get() = articlesRepository.getAllPublishedArticlesOldestFirst()
 
-        // Fresh Articles: IMMER nur ungelesene Artikel, unabhängig von anderen Einstellungen
         override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() {
-                val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                return articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
-            }
+            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
 
         override val allArticles: PagingSource<Int, ArticleWithFeed>
             get() =  articlesRepository.getAllArticlesOldestFirst()
@@ -276,6 +263,26 @@ class ArticlesListViewModel @AssistedInject constructor(
         .map(::prepareArticlePagingData)
         .cachedIn(viewModelScope)
 
+    /**
+     * Article count derived from the same query parameters as the PagingSource.
+     * This is the single source of truth for the count displayed on the detail page,
+     * ensuring it always matches the article list.
+     */
+    override val articleCount: StateFlow<Int> = feedsRepository.getFeedById(feedId)
+        .filterNotNull()
+        .flatMapLatest { feed -> getCountForFeed(feed) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    private fun getCountForFeed(feed: Feed): Flow<Int> {
+        return when (feed.id) {
+            Feed.FEED_ID_STARRED -> articlesRepository.getAllStarredArticlesCount()
+            Feed.FEED_ID_PUBLISHED -> articlesRepository.getAllUnreadArticlesCount()
+            Feed.FEED_ID_ALL_ARTICLES -> articlesRepository.getAllArticlesCount()
+            Feed.FEED_ID_FRESH -> articlesRepository.getFreshUnreadCount()
+            else -> articlesRepository.getUnreadArticlesCountForFeed(feed.id)
+        }
+    }
+
     private val refreshJobName = MutableStateFlow<String?>(null)
 
     private val account = component.account
@@ -288,9 +295,15 @@ class ArticlesListViewModel @AssistedInject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private fun getArticlesForFeed(feed: Feed): Flow<PagingData<ArticleWithFeed>> {
-        val isMostRecentOrderFlow = sortByMostRecentFirst
+        // For Fresh feed, combine with shared freshTimeSec so time parameter
+        // matches the count query. For other feeds, only react to sort order changes.
+        val paramsFlow = if (feed.id == Feed.FEED_ID_FRESH) {
+            combine(sortByMostRecentFirst, articlesRepository.freshTimeSec) { sort, time -> sort to time }
+        } else {
+            sortByMostRecentFirst.map { sort -> sort to 0L }
+        }
 
-        return isMostRecentOrderFlow.flatMapLatest { mostRecentFirst ->
+        return paramsFlow.flatMapLatest { (mostRecentFirst, freshTime) ->
             val config = PagingConfig(pageSize = 50)
             val pager = Pager(config) {
                 when (feed.id) {
@@ -307,9 +320,8 @@ class ArticlesListViewModel @AssistedInject constructor(
                         else articlesRepository.getAllArticlesOldestFirst()
                     }
                     Feed.FEED_ID_FRESH -> {
-                        val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-                        if (mostRecentFirst) articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
-                        else articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
+                        if (mostRecentFirst) articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTime)
+                        else articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTime)
                     }
                     else -> {
                         if (mostRecentFirst) articlesRepository.getAllUnreadArticlesForFeed(feed.id)
@@ -351,6 +363,9 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
 
     override val isAllArticlesFeed: StateFlow<Boolean> = MutableStateFlow(false)
 
+    // Tag views don't have a separate count in the navbar, so this is informational only
+    override val articleCount: StateFlow<Int> = MutableStateFlow(0)
+
     private val account: Account = component.account
 
     override val articles: Flow<PagingData<ArticleWithFeed>> =
@@ -370,8 +385,8 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
     private fun getArticlesForTag(tag: String): Flow<PagingData<ArticleWithFeed>> {
         val isMostRecentOrderFlow = sortByMostRecentFirst
         val needUnreadFlow = needUnread
-        return isMostRecentOrderFlow.combine(needUnreadFlow) { mostRecentFirst, needUnread ->
-            getArticleAccess(mostRecentFirst, needUnread)
+        return combine(isMostRecentOrderFlow, needUnreadFlow, articlesRepository.freshTimeSec) { mostRecentFirst, needUnread, freshTime ->
+            getArticleAccess(mostRecentFirst, needUnread, freshTime)
         }.flatMapLatest { access ->
             val config = PagingConfig(pageSize = 50)
             val pager = Pager(config) {

@@ -80,14 +80,18 @@ class ArticleListActivity : SessionActivity() {
                 accountViewModel.selectedAccount.collect { account ->
                     if (account != null) {
                         activityViewModel.setAccount(account)
-                        // Trigger automatic refresh on startup
-                        if (savedInstanceState == null) {
-                            activityViewModel.refresh()
-                        }
                     } else {
                         accountViewModel.startSelectAccountActivity(this@ArticleListActivity)
                     }
                 }
+            }
+        }
+
+        // Refresh the currently open feed whenever the app comes to the foreground.
+        // Throttled inside refreshOnForeground() to avoid hitting the server too often.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                activityViewModel.refreshOnForeground()
             }
         }
 

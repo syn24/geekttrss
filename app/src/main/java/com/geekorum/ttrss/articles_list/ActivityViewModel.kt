@@ -110,8 +110,22 @@ class ActivityViewModel @Inject constructor(
         this.account.value = account
     }
 
+    private var lastRefreshTimeMs = 0L
+
     fun refresh() {
+        lastRefreshTimeMs = System.currentTimeMillis()
         _refreshClickedEvent.value = Event(Any())
+    }
+
+    /**
+     * Triggers a refresh only if enough time has passed since the last refresh.
+     * Called automatically when the app comes to the foreground.
+     */
+    fun refreshOnForeground() {
+        val now = System.currentTimeMillis()
+        if (now - lastRefreshTimeMs >= FOREGROUND_REFRESH_INTERVAL_MS) {
+            refresh()
+        }
     }
 
     fun displayArticle(position: Int, article: Article) {
@@ -159,5 +173,9 @@ class ActivityViewModel @Inject constructor(
 
     fun setIsScrollingUp(up: Boolean) {
         _isScrollingUp.value = up
+    }
+
+    companion object {
+        private const val FOREGROUND_REFRESH_INTERVAL_MS = 5 * 60 * 1000L // 5 minutes
     }
 }

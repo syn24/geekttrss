@@ -59,6 +59,10 @@ internal open class MockApiService : ApiService {
         return getArticles(feedId, sinceId, offset, showExcerpt, showContent, includeAttachments)
     }
 
+    override suspend fun getUnreadArticles(feedId: Long, offset: Int, showExcerpt: Boolean, showContent: Boolean, includeAttachments: Boolean): List<ArticleWithAttachments> {
+        return emptyList()
+    }
+
     override suspend fun getCategories(): List<Category> {
         TODO("not implemented")
     }

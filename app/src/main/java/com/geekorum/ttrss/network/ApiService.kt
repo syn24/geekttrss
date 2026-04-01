@@ -46,6 +46,14 @@ interface ApiService {
         includeAttachments: Boolean
     ): List<ArticleWithAttachments>
 
+    /** Fetch all currently unread articles for [feedId], ignoring sinceId bounds. */
+    @Throws(ApiCallException::class)
+    suspend fun getUnreadArticles(
+        feedId: Long, offset: Int,
+        showExcerpt: Boolean, showContent: Boolean,
+        includeAttachments: Boolean
+    ): List<ArticleWithAttachments>
+
     @Throws(ApiCallException::class)
     suspend fun getCategories(): List<Category>
 

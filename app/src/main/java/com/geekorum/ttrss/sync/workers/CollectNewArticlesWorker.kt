@@ -45,8 +45,8 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import timber.log.Timber
 import java.io.IOException
-
 import java.util.concurrent.TimeUnit
+
 
 /**
  * Collect all the new articles from a feed
@@ -91,56 +91,50 @@ class CollectNewArticlesWorker @AssistedInject constructor(
     @Throws(ApiCallException::class, RemoteException::class, OperationApplicationException::class)
     private suspend fun collectNewArticles() = coroutineScope {
         val isFreshFeed = feedId == -3L
-        // For Fresh Articles (-3), we want all unread items regardless of age.
-        // For All Articles (-4) and regular feeds, we limit to 1 day to handle the "catch up" scenario without downloading history.
+        // Fresh feed: no time limit (server already filters to unread articles <36h).
+        // Other feeds: only keep read articles from the last day to bound DB growth.
+        // Unread articles are always kept regardless of age so nav counts match the detail view.
         val cutoffTime = if (isFreshFeed) 0L else System.currentTimeMillis() / 1000 - TimeUnit.DAYS.toSeconds(1)
-        val limitDescription = if (isFreshFeed) "no time limit" else "limit 1 day"
 
-        Timber.i("Collecting new articles for feed $feedId ($limitDescription)")
-
-        // Use sinceId=0 to get all articles, then filter by time locally.
-        // This ensures we don't miss articles if article IDs are not monotonically increasing.
-        val sinceId = 0L
-        Timber.d("Feed $feedId: Using sinceId=$sinceId (fetching all recent articles)")
+        // Phase 1: fetch articles newer than what we already have (sinceId bound).
+        val sinceId = getLatestArticleId()
+        Timber.i("Collecting new articles for feed $feedId (sinceId=$sinceId)")
 
         var offset = 0
         var totalFetched = 0
         val maxArticlesToFetch = 1000
 
-        // Fetch newest articles first (gradually=false)
-        var articlesRaw = getArticles(feedId, sinceId, offset,
-            includeAttachments = true, gradually = false)
-        Timber.d("Feed $feedId: First batch returned ${articlesRaw.size} articles from API (sinceId=$sinceId, offset=$offset)")
+        var articlesRaw = getArticles(feedId, sinceId, offset, includeAttachments = true, gradually = false)
 
         while (articlesRaw.isNotEmpty() && totalFetched < maxArticlesToFetch) {
-            // Filter out articles older than cutoff (only applies to non-Fresh feeds)
-            val recentArticles = articlesRaw.filter { it.article.lastTimeUpdate >= cutoffTime }
-            Timber.d("Feed $feedId: After cutoff filter: ${recentArticles.size} articles (cutoffTime=$cutoffTime)")
-
-            if (recentArticles.isNotEmpty()) {
+            // Keep unread articles regardless of age; discard old read articles to bound DB size.
+            val articlesToInsert = articlesRaw.filter { it.article.isUnread || it.article.lastTimeUpdate >= cutoffTime }
+            if (articlesToInsert.isNotEmpty()) {
                 databaseService.runInTransaction {
-                    insertArticles(recentArticles)
+                    insertArticles(articlesToInsert)
                 }
-                totalFetched += recentArticles.size
-                Timber.d("Feed $feedId: Inserted ${recentArticles.size} articles, total fetched: $totalFetched")
+                totalFetched += articlesToInsert.size
+                Timber.d("Feed $feedId: Inserted ${articlesToInsert.size} articles, total: $totalFetched")
             }
-
-            // Check if we reached the end of the "fresh" window
-            // If the last article in the batch is older than cutoff, we can stop (unless it's Fresh feed where we want all)
-            val oldestInBatch = articlesRaw.minByOrNull { it.article.lastTimeUpdate }?.article?.lastTimeUpdate ?: 0
-
-            // For regular feeds, stop if we hit old articles.
-            // For fresh feed, we technically could stop if we hit something older than we care about,
-            // but user said "fetch all unread", so we continue until maxArticlesToFetch is hit or API is empty.
-            if (!isFreshFeed && oldestInBatch < cutoffTime) {
-                Timber.i("Reached articles older than cutoff. Stopping sync for feed $feedId.")
-                break
-            }
-
             offset += articlesRaw.size
+            articlesRaw = getArticles(feedId, sinceId, offset, includeAttachments = true, gradually = false)
+        }
 
-            if (totalFetched < maxArticlesToFetch) {
-                articlesRaw = getArticles(feedId, sinceId, offset, includeAttachments = true, gradually = false)
+        // Phase 2: fetch all currently unread articles (sinceId=0, view_mode=unread).
+        // This catches old unread articles whose IDs are lower than sinceId and would
+        // therefore never be returned by Phase 1 — the exact cause of nav-count vs
+        // detail-view discrepancies on feeds like "Ibook".
+        if (!isFreshFeed) {
+            Timber.i("Fetching unread articles for feed $feedId to sync old unread items")
+            var unreadOffset = 0
+            var unreadArticlesRaw = getUnreadArticles(feedId, unreadOffset, includeAttachments = true)
+            while (unreadArticlesRaw.isNotEmpty()) {
+                databaseService.runInTransaction {
+                    insertArticles(unreadArticlesRaw)
+                }
+                Timber.d("Feed $feedId: Inserted ${unreadArticlesRaw.size} unread articles")
+                unreadOffset += unreadArticlesRaw.size
+                unreadArticlesRaw = getUnreadArticles(feedId, unreadOffset, includeAttachments = true)
             }
         }
     }

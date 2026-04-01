@@ -42,8 +42,16 @@ open class Application : AndroidApplication(), Configuration.Provider, ImageLoad
     @Inject
     lateinit var imageLoader: ImageLoader
 
+    @Inject
+    lateinit var badgeManager: BadgeManager
+
     open val applicationComponent by lazy {
         EntryPointAccessors.fromApplication(this, ApplicationComponentEntryPoint::class.java)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        badgeManager.start()
     }
 
     override fun newImageLoader(): ImageLoader = imageLoader

@@ -61,13 +61,27 @@ class ApiRetrofitService(
         return getArticlesInt(feedId, sinceId, offset, showExcerpt, showContent, includeAttachments, sortOrder = DATE_REVERSE)
     }
 
+    override suspend fun getUnreadArticles(
+        feedId: Long, offset: Int,
+        showExcerpt: Boolean, showContent: Boolean,
+        includeAttachments: Boolean
+    ): List<ArticleWithAttachments> {
+        return getArticlesInt(
+            feedId = feedId, sinceId = 0, offset = offset,
+            showExcerpt = showExcerpt, showContent = showContent,
+            includeAttachments = includeAttachments,
+            viewMode = GetArticlesRequestPayload.ViewMode.UNREAD
+        )
+    }
+
     private suspend fun getArticlesInt(feedId: Long, sinceId: Long, offset: Int,
                                        showExcerpt: Boolean, showContent: Boolean,
                                        includeAttachments: Boolean = false,
-                                       sortOrder: SortOrder = FEED_DATES): List<ArticleWithAttachments> {
+                                       sortOrder: SortOrder = FEED_DATES,
+                                       viewMode: GetArticlesRequestPayload.ViewMode = GetArticlesRequestPayload.ViewMode.ALL_ARTICLES): List<ArticleWithAttachments> {
         val payload = GetArticlesRequestPayload(
             feedId = feedId,
-            viewMode = GetArticlesRequestPayload.ViewMode.ALL_ARTICLES,
+            viewMode = viewMode,
             showContent = showContent,
             showExcerpt = showExcerpt,
             skip = offset,

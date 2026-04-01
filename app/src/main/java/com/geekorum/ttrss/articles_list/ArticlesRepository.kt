@@ -36,6 +36,8 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 /**
@@ -154,9 +156,23 @@ class ArticlesRepository
         return articleDao.getMostUnreadTags(count)
     }
 
+    /**
+     * Single source of truth for the "fresh" time cutoff (36 hours ago).
+     * Recomputed every 10 minutes. Used by both count and list queries
+     * to ensure they always agree on which articles are "fresh".
+     */
+    val freshTimeSec: Flow<Long> = flow {
+        while (true) {
+            emit(System.currentTimeMillis() / 1000 - 3600 * 36)
+            delay(10 * 60 * 1000L)
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun getFreshUnreadCount(): Flow<Int> {
-        val freshTimeSec = System.currentTimeMillis() / 1000 - 3600 * 36
-        return articleDao.getUnreadArticlesUpdatedAfterTimeCount(freshTimeSec)
+        return freshTimeSec.flatMapLatest { time ->
+            articleDao.getUnreadArticlesUpdatedAfterTimeCount(time)
+        }
     }
 
     fun getAllArticlesCount(): Flow<Int> {
@@ -169,6 +185,10 @@ class ArticlesRepository
 
     fun getAllStarredArticlesCount(): Flow<Int> {
         return articleDao.getAllStarredArticlesCount()
+    }
+
+    fun getUnreadArticlesCountForFeed(feedId: Long): Flow<Int> {
+        return articleDao.getUnreadArticlesForFeedCount(feedId)
     }
 }
 

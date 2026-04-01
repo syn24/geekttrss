@@ -53,6 +53,8 @@ The project builds in 2 flavors :
 
    * The free/libre flavor is distributed on [F-Droid](https://f-droid.org/packages/com.geekorum.ttrss.free/), and can also be built from the sources. It doesn't contains any Google Play services. The APK of the latest version of this flavor can also be downloaded from the [Releases Section](https://github.com/fbarthelery/geekttrss/releases/latest).
 
+To build: use build signed apk free release version!
+
 
 Build instructions
 ==================

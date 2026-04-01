@@ -33,6 +33,7 @@ import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.data.feedsettings.FeedSettingsRepository
 import com.geekorum.ttrss.network.ApiService
 import com.geekorum.ttrss.sync.SyncContract.*
+import com.geekorum.ttrss.providers.PurgeArticlesWorker
 import com.geekorum.ttrss.sync.workers.*
 import com.geekorum.ttrss.webapi.ApiCallException
 import dagger.assisted.Assisted
@@ -80,6 +81,8 @@ class ArticleSynchronizer @AssistedInject constructor(
             Timber.i("ArticleSynchronizer: collectNewArticles completed")
             updateArticlesStatus()
             Timber.i("ArticleSynchronizer: updateArticlesStatus completed")
+            purgeOldArticles()
+            Timber.i("ArticleSynchronizer: purgeOldArticles completed")
         } catch (e: ApiCallException) {
             Timber.w(e, "unable to synchronize articles")
         } catch (e: RemoteException) {
@@ -230,6 +233,12 @@ class ArticleSynchronizer @AssistedInject constructor(
                 }
                 .collect()
         }
+    }
+
+    private suspend fun purgeOldArticles() {
+        val request = OneTimeWorkRequestBuilder<PurgeArticlesWorker>()
+            .build()
+        workManager.enqueue(request).await()
     }
 
     override fun onSyncCancelled() {

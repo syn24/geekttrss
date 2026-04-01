@@ -151,6 +151,10 @@ interface ArticleDao {
     @Query("SELECT COUNT(*) FROM articles WHERE marked=1")
     fun getAllStarredArticlesCount(): Flow<Int>
 
+    // PAIRED with getAllUnreadArticlesForFeed() — must use identical WHERE clause
+    @Query("SELECT COUNT(*) FROM articles WHERE feed_id=:feedId AND unread=1")
+    fun getUnreadArticlesForFeedCount(feedId: Long): Flow<Int>
+
     @Query("UPDATE articles SET transiant_unread=:isUnread WHERE _id=:articleId")
     suspend fun updateArticleTransientUnread(articleId: Long, isUnread: Boolean)
 

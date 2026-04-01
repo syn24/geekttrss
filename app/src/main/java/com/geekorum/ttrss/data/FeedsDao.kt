@@ -34,11 +34,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 abstract class FeedsDao {
 
-    @Query("SELECT * FROM feeds WHERE unread_count > 0 ORDER BY title")
+    @Query("SELECT _id, url, title, cat_id, display_title, last_time_update, " +
+        "(SELECT COUNT(*) FROM articles WHERE articles.feed_id = feeds._id AND articles.unread = 1) as unread_count, " +
+        "is_subscribed " +
+        "FROM feeds " +
+        "WHERE _id IN (SELECT DISTINCT feed_id FROM articles WHERE unread = 1) " +
+        "ORDER BY title")
     @Transaction
     abstract fun getAllUnreadFeeds(): Flow<List<FeedWithFavIcon>>
 
-    @Query("SELECT * FROM feeds ORDER BY title")
+    @Query("SELECT _id, url, title, cat_id, display_title, last_time_update, " +
+        "(SELECT COUNT(*) FROM articles WHERE articles.feed_id = feeds._id AND articles.unread = 1) as unread_count, " +
+        "is_subscribed " +
+        "FROM feeds ORDER BY title")
     @Transaction
     abstract fun getAllFeeds(): Flow<List<FeedWithFavIcon>>
 
@@ -81,10 +89,18 @@ abstract class FeedsDao {
     @Delete
     abstract suspend fun deleteCategories(categories: Collection<Category>)
 
-    @Query("SELECT * FROM feeds WHERE unread_count > 0 AND cat_id=:catId ORDER BY title")
+    @Query("SELECT _id, url, title, cat_id, display_title, last_time_update, " +
+        "(SELECT COUNT(*) FROM articles WHERE articles.feed_id = feeds._id AND articles.unread = 1) as unread_count, " +
+        "is_subscribed " +
+        "FROM feeds " +
+        "WHERE cat_id=:catId AND _id IN (SELECT DISTINCT feed_id FROM articles WHERE unread = 1) " +
+        "ORDER BY title")
     abstract fun getUnreadFeedsForCategory(catId: Long): Flow<List<Feed>>
 
-    @Query("SELECT * FROM feeds WHERE cat_id=:catId ORDER BY title")
+    @Query("SELECT _id, url, title, cat_id, display_title, last_time_update, " +
+        "(SELECT COUNT(*) FROM articles WHERE articles.feed_id = feeds._id AND articles.unread = 1) as unread_count, " +
+        "is_subscribed " +
+        "FROM feeds WHERE cat_id=:catId ORDER BY title")
     abstract fun getFeedsForCategory(catId: Long): Flow<List<Feed>>
 
     @Transaction

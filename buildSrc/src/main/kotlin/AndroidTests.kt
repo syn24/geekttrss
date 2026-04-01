@@ -20,8 +20,7 @@
  */
 package com.geekorum.build
 
-import com.android.build.api.dsl.CommonExtension
-import com.android.build.api.dsl.DefaultConfig
+import com.android.build.gradle.TestedExtension
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.DependencyConstraint
@@ -35,13 +34,11 @@ const val androidxTestRunnerVersion = "1.6.2"
 const val androidxTestCoreVersion = "1.6.1"
 const val robolectricVersion = "4.14.1"
 
-private typealias BaseExtension = CommonExtension<*, *, DefaultConfig, *, *, *>
-
 /*
  * Configuration for espresso and robolectric usage in an Android project
  */
 internal fun Project.configureTests() {
-    extensions.configure<BaseExtension>("android") {
+    extensions.configure<TestedExtension>("android") {
         defaultConfig {
             testInstrumentationRunner = "com.geekorum.ttrss.HiltRunner"
             testInstrumentationRunnerArguments += mapOf(

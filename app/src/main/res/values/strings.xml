@@ -24,6 +24,13 @@
 <resources>
     <string name="app_name" translatable="false">GeekTTRSS</string>
 
+    <!-- Badge / notification -->
+    <string name="notif_channel_badge_name">Unread Articles</string>
+    <plurals name="notif_unread_articles_title">
+        <item quantity="one">%d unread article</item>
+        <item quantity="other">%d unread articles</item>
+    </plurals>
+
     <string name="path_star_mask_filled" translatable="false">M0,24 L24,24 L24,0 L0,0 Z</string>
     <string name="path_star_mask_empty" translatable="false">M0,24 L24,24 L24,24 L0,24 Z</string>
     <string name="ttrss_account">Tiny Tiny RSS</string>
