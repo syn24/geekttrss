@@ -40,17 +40,17 @@ interface ArticleDao {
 
     @Query("SELECT * FROM articles ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllArticles(): PagingSource<Int, ArticleWithFeed>
+    fun getAllArticles(): Flow<List<ArticleWithFeed>>
     @Transaction
     @Query("SELECT * FROM articles ORDER BY last_time_update")
-    fun getAllArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed>
+    fun getAllArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE unread=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllUnreadArticles(): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticles(): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE unread=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllUnreadArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE unread=1 ORDER BY RANDOM() LIMIT :count")
     @Transaction
@@ -58,17 +58,17 @@ interface ArticleDao {
 
     @Query("SELECT * FROM articles WHERE feed_id=:feedId ORDER BY last_time_update DESC ")
     @Transaction
-    fun getAllArticlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE feed_id=:feedId ORDER BY last_time_update")
     @Transaction
-    fun getAllArticlesForFeedOldestFirst(feedId: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE feed_id=:feedId AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllUnreadArticlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE feed_id=:feedId AND unread=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllUnreadArticlesForFeedOldestFirst(feedId: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE last_time_update>=:time AND unread=1 AND feed_id=:feedId " +
         "ORDER BY RANDOM()")
@@ -79,65 +79,58 @@ interface ArticleDao {
         " JOIN articles_tags ON (articles_tags.article_id = articles._id)" +
         " WHERE articles_tags.tag=:tag ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllArticlesForTag(tag: String): PagingSource<Int, ArticleWithFeed>
+    fun getAllArticlesForTag(tag: String): Flow<List<ArticleWithFeed>>
     @Query("SELECT articles.* FROM articles " +
         " JOIN articles_tags ON (articles_tags.article_id = articles._id)" +
         " WHERE articles_tags.tag=:tag ORDER BY last_time_update")
     @Transaction
-    fun getAllArticlesForTagOldestFirst(tag: String): PagingSource<Int, ArticleWithFeed>
+    fun getAllArticlesForTagOldestFirst(tag: String): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT articles.* FROM articles " +
         " JOIN articles_tags ON (articles_tags.article_id = articles._id)" +
         " WHERE articles_tags.tag=:tag AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllUnreadArticlesForTag(tag: String): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesForTag(tag: String): Flow<List<ArticleWithFeed>>
     @Query("SELECT articles.* FROM articles " +
         " JOIN articles_tags ON (articles_tags.article_id = articles._id)" +
         " WHERE articles_tags.tag=:tag AND unread=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllUnreadArticlesForTagOldestFirst(tag: String): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesForTagOldestFirst(tag: String): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE marked=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllStarredArticles(): PagingSource<Int, ArticleWithFeed>
+    fun getAllStarredArticles(): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE marked=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllStarredArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed>
+    fun getAllStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE marked=1 AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllUnreadStarredArticles(): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadStarredArticles(): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE marked=1 AND unread=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllUnreadStarredArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE published=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllPublishedArticles(): PagingSource<Int, ArticleWithFeed>
+    fun getAllPublishedArticles(): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE published=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllPublishedArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed>
+    fun getAllPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE published=1 AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllUnreadPublishedArticles(): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadPublishedArticles(): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE published=1 AND unread=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllUnreadPublishedArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed>
-
-    @Query("SELECT * FROM articles WHERE last_time_update>=:time ORDER BY last_time_update DESC")
-    @Transaction
-    fun getAllArticlesUpdatedAfterTime(time: Long): PagingSource<Int, ArticleWithFeed>
-    @Query("SELECT * FROM articles WHERE last_time_update>=:time ORDER BY last_time_update")
-    @Transaction
-    fun getAllArticlesUpdatedAfterTimeOldestFirst(time: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE last_time_update>=:time AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
-    fun getAllUnreadArticlesUpdatedAfterTime(time: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesUpdatedAfterTime(time: Long): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE last_time_update>=:time AND unread=1 ORDER BY last_time_update")
     @Transaction
-    fun getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time: Long): PagingSource<Int, ArticleWithFeed>
+    fun getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time: Long): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT COUNT(*) FROM articles WHERE last_time_update>=:time AND unread=1")
     fun getUnreadArticlesUpdatedAfterTimeCount(time: Long): Flow<Int>
@@ -147,6 +140,9 @@ interface ArticleDao {
 
     @Query("SELECT COUNT(*) FROM articles WHERE unread=1")
     fun getAllUnreadArticlesCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM articles WHERE unread=1")
+    suspend fun getUnreadArticlesCountOnce(): Int
 
     @Query("SELECT COUNT(*) FROM articles WHERE marked=1")
     fun getAllStarredArticlesCount(): Flow<Int>

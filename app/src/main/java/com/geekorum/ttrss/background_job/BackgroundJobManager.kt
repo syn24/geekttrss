@@ -21,6 +21,7 @@
 package com.geekorum.ttrss.background_job
 
 import android.accounts.Account
+import android.accounts.AccountManager
 import android.app.Application
 import android.app.job.JobInfo
 import android.app.job.JobScheduler
@@ -43,10 +44,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.await
 import androidx.work.workDataOf
+import com.geekorum.ttrss.accounts.AccountAuthenticator
 import com.geekorum.ttrss.providers.ArticlesContract
 import com.geekorum.ttrss.providers.PurgeArticlesWorker
 import com.geekorum.ttrss.sync.SyncContract
 import com.geekorum.ttrss.sync.workers.CollectNewArticlesWorker
+import com.geekorum.ttrss.sync.workers.PeriodicRefreshWorker
 import com.geekorum.ttrss.sync.workers.SendTransactionsWorker
 import com.geekorum.ttrss.sync.workers.SyncFeedsWorker
 import com.geekorum.ttrss.sync.workers.SyncWorkerFactory
@@ -86,12 +89,23 @@ class BackgroundJobManager @Inject constructor(
 
     fun setupPeriodicJobs() {
         setupPeriodicPurge()
+        setupPeriodicRefresh()
+        // Drop any stale SyncAdapter periodic schedules from previous app versions
+        removeLegacyPeriodicSyncs()
         // Immediately purge old articles on app start to prevent OutOfMemoryError
         triggerImmediatePurge()
     }
 
     private fun setupPeriodicPurge() {
         impl.setupPeriodicPurge()
+    }
+
+    private fun setupPeriodicRefresh() {
+        impl.setupPeriodicRefresh()
+    }
+
+    private fun removeLegacyPeriodicSyncs() {
+        impl.removeLegacyPeriodicSyncs()
     }
 
     fun triggerImmediatePurge() {
@@ -101,11 +115,13 @@ class BackgroundJobManager @Inject constructor(
     companion object {
         const val PERIODIC_PURGE_JOB_ID = 3
         const val PERIODIC_PURGE_JOB = "periodic_purge"
+        const val PERIODIC_REFRESH_WORK = "periodic_refresh"
 
         val PERIODIC_PURGE_JOB_INTERVAL_MILLIS = TimeUnit.DAYS.toMillis(1)
         // Periodic background sync every 30 minutes
         val PERIODIC_REFRESH_JOB_INTERVAL_S = TimeUnit.MINUTES.toSeconds(30)
         val PERIODIC_FULL_REFRESH_JOB_INTERVAL_S = TimeUnit.DAYS.toSeconds(1)
+        const val PERIODIC_REFRESH_INTERVAL_MIN = 30L
     }
 }
 
@@ -220,6 +236,37 @@ private open class BackgroundJobManagerImpl internal constructor(
             .setExtras(extras)
             .syncOnce()
         ContentResolver.requestSync(builder.build())
+    }
+
+    open fun setupPeriodicRefresh() {
+        val request = PeriodicWorkRequestBuilder<PeriodicRefreshWorker>(
+            BackgroundJobManager.PERIODIC_REFRESH_INTERVAL_MIN, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build())
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork(
+                BackgroundJobManager.PERIODIC_REFRESH_WORK,
+                ExistingPeriodicWorkPolicy.KEEP,
+                request)
+    }
+
+    open fun removeLegacyPeriodicSyncs() {
+        try {
+            val accountManager = AccountManager.get(context)
+            val accounts = accountManager.getAccountsByType(AccountAuthenticator.TTRSS_ACCOUNT_TYPE)
+            for (account in accounts) {
+                val existing = ContentResolver.getPeriodicSyncs(account, ArticlesContract.AUTHORITY)
+                for (periodicSync in existing) {
+                    ContentResolver.removePeriodicSync(
+                        account, ArticlesContract.AUTHORITY, periodicSync.extras)
+                    Timber.i("Removed legacy periodic SyncAdapter entry for ${account.name}")
+                }
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to clean up legacy periodic syncs")
+        }
     }
 
     open fun setupPeriodicPurge() {

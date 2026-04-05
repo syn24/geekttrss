@@ -48,74 +48,51 @@ class ArticlesRepository
     private val articleDao: ArticleDao,
 ) {
 
-    fun getAllArticles(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllArticles()
-    fun getAllArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllArticlesOldestFirst()
+    fun getAllArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllArticles()
+    fun getAllArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesOldestFirst()
 
-    fun getAllUnreadArticles(): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticles()
-    }
-    fun getAllUnreadArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesOldestFirst()
-    }
+    fun getAllUnreadArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticles()
+    fun getAllUnreadArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesOldestFirst()
 
     suspend fun getUnreadArticlesRandomized(count: Int): List<ArticleWithFeed> {
         return articleDao.getUnreadArticlesRandomized(count)
     }
 
-    fun getAllPublishedArticles(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllPublishedArticles()
-    fun getAllPublishedArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllPublishedArticlesOldestFirst()
+    fun getAllPublishedArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllPublishedArticles()
+    fun getAllPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllPublishedArticlesOldestFirst()
 
-    fun getAllUnreadPublishedArticles(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllUnreadPublishedArticles()
-    fun getAllUnreadPublishedArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllUnreadPublishedArticlesOldestFirst()
+    fun getAllUnreadPublishedArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadPublishedArticles()
+    fun getAllUnreadPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadPublishedArticlesOldestFirst()
 
-    fun getAllStarredArticles(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllStarredArticles()
-    fun getAllStarredArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllStarredArticlesOldestFirst()
+    fun getAllStarredArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllStarredArticles()
+    fun getAllStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllStarredArticlesOldestFirst()
 
-    fun getAllUnreadStarredArticles(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllUnreadStarredArticles()
-    fun getAllUnreadStarredArticlesOldestFirst(): PagingSource<Int, ArticleWithFeed> = articleDao.getAllUnreadStarredArticlesOldestFirst()
+    fun getAllUnreadStarredArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadStarredArticles()
+    fun getAllUnreadStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadStarredArticlesOldestFirst()
 
-    fun getAllArticlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed> = articleDao.getAllArticlesForFeed(feedId)
-    fun getAllArticlesForFeedOldestFirst(feedId: Long): PagingSource<Int, ArticleWithFeed> = articleDao.getAllArticlesForFeedOldestFirst(feedId)
+    fun getAllArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesForFeed(feedId)
+    fun getAllArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesForFeedOldestFirst(feedId)
 
-    fun getAllUnreadArticlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesForFeed(feedId)
-    }
-    fun getAllUnreadArticlesForFeedOldestFirst(feedId: Long): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesForFeedOldestFirst(feedId)
-    }
+    fun getAllUnreadArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesForFeed(feedId)
+    fun getAllUnreadArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesForFeedOldestFirst(feedId)
 
     suspend fun getAllUnreadArticlesForFeedUpdatedAfterTimeRandomized(feedId: Long, time: Long): List<Article> {
         return articleDao.getAllUnreadArticlesForFeedUpdatedAfterTimeRandomized(feedId, time)
     }
 
-    fun getAllArticlesForTag(tag: String): PagingSource<Int, ArticleWithFeed> = articleDao.getAllArticlesForTag(tag)
-    fun getAllArticlesForTagOldestFirst(tag: String): PagingSource<Int, ArticleWithFeed> = articleDao.getAllArticlesForTagOldestFirst(tag)
+    fun getAllArticlesForTag(tag: String): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesForTag(tag)
+    fun getAllArticlesForTagOldestFirst(tag: String): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesForTagOldestFirst(tag)
 
-    fun getAllUnreadArticlesForTag(tag: String): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesForTag(tag)
-    }
-    fun getAllUnreadArticlesForTagOldestFirst(tag: String): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesForTagOldestFirst(tag)
-    }
+    fun getAllUnreadArticlesForTag(tag: String): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesForTag(tag)
+    fun getAllUnreadArticlesForTagOldestFirst(tag: String): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesForTagOldestFirst(tag)
 
     suspend fun getUnreadArticlesForTag(tag: String, count: Int = 3): List<ArticleWithFeed> {
         return articleDao.getUnreadArticlesForTag(tag, count)
     }
 
-    fun getAllArticlesUpdatedAfterTime(time: Long): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllArticlesUpdatedAfterTime(time)
-    }
-    fun getAllArticlesUpdatedAfterTimeOldestFirst(time: Long): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllArticlesUpdatedAfterTimeOldestFirst(time)
-    }
+    fun getAllUnreadArticlesUpdatedAfterTime(time: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesUpdatedAfterTime(time)
 
-    fun getAllUnreadArticlesUpdatedAfterTime(time: Long): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesUpdatedAfterTime(time)
-    }
-
-    fun getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time: Long): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time)
-    }
+    fun getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(time)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getArticleById(articleId: Long): Flow<Article?> = articleDao.getArticleById(articleId).distinctUntilChanged()

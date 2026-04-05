@@ -29,6 +29,7 @@ import android.util.Log
 import androidx.lifecycle.asFlow
 import androidx.work.*
 import com.geekorum.geekdroid.accounts.CancellableSyncAdapter
+import com.geekorum.ttrss.BadgeManager
 import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.data.feedsettings.FeedSettingsRepository
 import com.geekorum.ttrss.network.ApiService
@@ -54,7 +55,8 @@ class ArticleSynchronizer @AssistedInject constructor(
     @Assisted params: Bundle,
     private val account: Account,
     private val databaseService: DatabaseService,
-    private val feedSettingsRepository: FeedSettingsRepository
+    private val feedSettingsRepository: FeedSettingsRepository,
+    private val badgeManager: BadgeManager
 ) : CancellableSyncAdapter.CancellableSync() {
 
     @AssistedFactory
@@ -92,6 +94,13 @@ class ArticleSynchronizer @AssistedInject constructor(
         } catch (e: RuntimeException) {
             Timber.log(if (e is CancellationException) Log.WARN else Log.ERROR,
                 e,"unable to synchronize articles")
+        } finally {
+            try {
+                badgeManager.updateBadgeNow()
+                Timber.i("ArticleSynchronizer: badge updated")
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to update badge after sync")
+            }
         }
         Timber.i("ArticleSynchronizer.sync() finished")
     }

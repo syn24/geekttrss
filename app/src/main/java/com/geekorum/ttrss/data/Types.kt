@@ -186,7 +186,11 @@ data class ArticleWithAttachments(
 )
 
 /**
- * Convenient POJO, grouping Metadata of an [Article]
+ * Convenient POJO, grouping Metadata of an [Article].
+ * Deliberately excludes [Article.lastTimeUpdate] so that
+ * [SynchronizationDao.updateArticlesMetadata] never overwrites the
+ * timestamp that was set during article collection — preventing
+ * Fresh Articles from losing articles whose timestamp was reset to 0.
  */
 data class Metadata(
     @ColumnInfo(name = BaseColumns._ID)
@@ -199,8 +203,6 @@ data class Metadata(
     val isStarred: Boolean,
     @ColumnInfo(name = "published")
     val isPublished: Boolean,
-    @ColumnInfo(name = "last_time_update")
-    val lastTimeUpdated: Long,
     @ColumnInfo(name = "is_updated")
     val isUpdated: Boolean
 ) {
@@ -210,7 +212,7 @@ data class Metadata(
                 Metadata(id,
                     isUnread, isTransientUnread,
                     isStarred, isPublished,
-                    lastTimeUpdate, isUpdated)
+                    isUpdated)
             }
         }
     }

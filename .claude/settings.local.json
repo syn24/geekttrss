@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep:*)",
+      "Bash(find /d/Image/Dev/geekttrss -name DatabaseService* -type f)",
+      "Bash(find /d/Image/Dev/geekttrss -path *data/Feed.kt -o -path *data/Feed* -type f)",
+      "Bash(./gradlew :app:compileFreeDebugKotlin)",
+      "Bash(./gradlew :app:testFreeDebugUnitTest)",
+      "Read(//d/Image/Dev/geekttrss/$LOCALAPPDATA/Android/Sdk/emulator/**)",
+      "Read(//d/Image/Dev/geekttrss/$HOME/AppData/Local/Android/Sdk/emulator/**)",
+      "Bash(where emulator:*)",
+      "Bash(\"C:\\\\Users\\\\sandra\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -avd Medium_Phone_API_36.1 -verbose 2>&1)",
+      "Bash(\"C:\\\\Users\\\\sandra\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\cmdline-tools\\\\latest\\\\bin\\\\sdkmanager.bat\" --update 2>&1)",
+      "Bash($LOCALAPPDATA/Android/Sdk/emulator/emulator.exe -avd Medium_Phone_API_36.1 -verbose)",
+      "Bash(tasklist.exe)",
+      "Read(//d/Image/Dev/geekttrss/$USERPROFILE/.android/avd/Medium_Phone.avd/**)",
+      "Read(//d/Image/Dev/geekttrss/$LOCALAPPDATA/Temp/**)",
+      "Bash(rm -f \"$USERPROFILE/.android/avd/Medium_Phone.avd/multiinstance.lock\")",
+      "Bash(rm -rf \"$USERPROFILE/.android/avd/Medium_Phone.avd/hardware-qemu.ini.lock\")",
+      "Bash(/dev/null echo:*)",
+      "Bash(grep -n articleCount /d/Image/Dev/geekttrss/app/src/main/java/com/geekorum/ttrss/articles_list/*.kt)",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Bash(./gradlew :app:assembleFreeDebug)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(grep -i \"\\\\.kt$\")",
+      "Bash(find /d/Image/Dev/geekttrss -type f \\\\\\(-name *BadgeManager* -o -name *badge* \\\\\\))",
+      "Bash(grep -r \"notif_channel_badge_name\\\\|notif_unread_articles_title\" /d/Image/Dev/geekttrss/app/src/main --include=*.kt --include=*.xml)"
+    ]
+  }
+}

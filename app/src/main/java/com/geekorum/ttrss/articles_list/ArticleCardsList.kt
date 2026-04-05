@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -73,12 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.LoadState
-import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemContentType
-import androidx.paging.compose.itemKey
 import com.geekorum.ttrss.R
 import com.geekorum.ttrss.data.Article
 import com.geekorum.ttrss.data.ArticleContentIndexed
@@ -93,7 +89,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOf
 
 
 /**
@@ -129,34 +124,17 @@ fun ArticleCardList(
 ) {
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val pullRefreshState = rememberPullToRefreshState()
-    val articles = viewModel.articles.collectAsLazyPagingItems()
+    val articles by viewModel.articles.collectAsStateWithLifecycle()
     val isMultiFeedList by viewModel.isMultiFeed.collectAsState()
-    val isAllArticlesFeed by viewModel.isAllArticlesFeed.collectAsState()
 
-    val loadState by debouncedPagingViewStateFor(articles)
-    val isEmpty = articles.itemCount == 0
+    val isEmpty = articles.isEmpty()
     var refreshIfEmpty by remember { mutableStateOf(true) }
-    LaunchedEffect(loadState, isEmpty) {
-        if (loadState is LoadState.NotLoading) {
+    LaunchedEffect(isRefreshing, isEmpty) {
+        if (!isRefreshing) {
             if (isEmpty && refreshIfEmpty) {
                 viewModel.refresh()
             }
-            // refresh again if we loaded some items
             refreshIfEmpty = !isEmpty
-        }
-    }
-
-    // When a sync completes, force a new PagingSource to be created at the ViewModel
-    // level. Calling articles.refresh() only invalidates the current PagingSource,
-    // which doesn't always propagate through the flatMapLatest + cachedIn chain.
-    // notifyDataChanged() bumps a trigger that makes flatMapLatest create a brand-new
-    // Pager, reliably reloading from the database.
-    var wasSyncing by remember { mutableStateOf(isRefreshing) }
-    LaunchedEffect(isRefreshing) {
-        val syncJustCompleted = wasSyncing && !isRefreshing
-        wasSyncing = isRefreshing
-        if (syncJustCompleted) {
-            viewModel.notifyDataChanged()
         }
     }
 
@@ -170,27 +148,18 @@ fun ArticleCardList(
         displayCompactItems = displayCompactItems,
         onCardClick = { index, article ->
             viewModel.setArticleUnread(article.id, false)
-            if (!isAllArticlesFeed) {
-                articles.refresh()
-            }
             onCardClick(index, article)
         },
         onShareClick = onShareClick,
         onOpenInBrowserClick = onOpenInBrowserClick,
         onToggleUnreadClick = {
             viewModel.setArticleUnread(it.id, !it.isTransientUnread)
-            if (!isAllArticlesFeed) {
-                articles.refresh()
-            }
         },
         onStarChanged = { article, newValue ->
             viewModel.setArticleStarred(article.id, newValue)
         },
         onSwiped = {
             viewModel.setArticleUnread(it.id, false)
-            if (!isAllArticlesFeed) {
-                articles.refresh()
-            }
         },
         onRefresh = {
             viewModel.refresh()
@@ -204,7 +173,7 @@ fun ArticleCardList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ArticleCardList(
-    articles: LazyPagingItems<ArticleWithFeed>,
+    articles: List<ArticleWithFeed>,
     isMultiFeedList: Boolean,
     isRefreshing: Boolean,
     pullRefreshState: PullToRefreshState,
@@ -243,34 +212,16 @@ private fun ArticleCardList(
         modifier = modifier
             .padding(pullRefreshBoxContentPadding)
     ) {
-        val loadState by debouncedPagingViewStateFor(articles)
-        val isEmpty = articles.itemCount == 0
+        val isEmpty = articles.isEmpty()
 
-        // Scroll to top when refresh completes and data is loaded
-        LaunchedEffect(articles, isRefreshing) {
-            snapshotFlow {
-                Triple(
-                    articles.loadState.refresh,
-                    articles.itemCount,
-                    isRefreshing
-                )
+        // Scroll to top when refresh completes and data is loaded.
+        LaunchedEffect(articles.size, isRefreshing) {
+            if (!isRefreshing && articles.isNotEmpty() && listState.firstVisibleItemIndex > 0) {
+                listState.scrollToItem(0)
             }
-                .distinctUntilChanged()
-                .collect { (refreshState, itemCount, refreshing) ->
-                    // Only scroll when:
-                    // 1. Refresh is complete (NotLoading)
-                    // 2. We have items loaded
-                    // 3. Pull-to-refresh animation is done
-                    if (refreshState is LoadState.NotLoading && itemCount > 0 && !refreshing) {
-                        // Check if we're not already at the top to avoid unnecessary scrolls
-                        if (listState.firstVisibleItemIndex > 0) {
-                            listState.scrollToItem(0)
-                        }
-                    }
-                }
         }
 
-        if (isEmpty && loadState is LoadState.NotLoading) {
+        if (isEmpty && !isRefreshing) {
             FeedEmptyText(isRefreshing)
         } else {
             ArticlesList(
@@ -293,7 +244,7 @@ private fun ArticleCardList(
 
 @Composable
 private fun ArticlesList(
-    articles: LazyPagingItems<ArticleWithFeed>,
+    articles: List<ArticleWithFeed>,
     listState: LazyListState,
     isMultiFeedList: Boolean,
     browserApplicationIcon: Drawable?,
@@ -315,12 +266,10 @@ private fun ArticlesList(
         contentPadding = contentPadding,
         modifier = Modifier.fillMaxSize()
     ) {
-        items(
-            count = articles.itemCount,
-            key = articles.itemKey{ it.article.id },
-            contentType = articles.itemContentType()
-        ) { index ->
-            val articleWithFeed = articles[index]
+        itemsIndexed(
+            items = articles,
+            key = { _, it -> it.article.id }
+        ) { index, articleWithFeed ->
             // initial state is visible if we don't animate
             val visibilityState = remember { MutableTransitionState(!animateItemAppearance) }
             // delay start of animation
@@ -340,24 +289,8 @@ private fun ArticlesList(
                 enter = fadeIn() + slideInVertically { it / 3 },
                 modifier = Modifier.animateItem(fadeInSpec = null)
             ) {
-                if (articleWithFeed != null) {
-                    if (displayCompactItems) {
-                        Column {
-                            SwipeableArticleItem(
-                                articleWithFeed = articleWithFeed,
-                                displayFeedName = isMultiFeedList,
-                                browserApplicationIcon = browserApplicationIcon,
-                                displayCompactItem = displayCompactItems,
-                                onItemClick = { onCardClick(index, articleWithFeed.article) },
-                                onOpenInBrowserClick = onOpenInBrowserClick,
-                                onShareClick = onShareClick,
-                                onStarChanged = onStarChanged,
-                                onToggleUnreadClick = onToggleUnreadClick,
-                                onSwiped = onSwiped
-                            )
-                            HorizontalDivider()
-                        }
-                    } else {
+                if (displayCompactItems) {
+                    Column {
                         SwipeableArticleItem(
                             articleWithFeed = articleWithFeed,
                             displayFeedName = isMultiFeedList,
@@ -370,7 +303,21 @@ private fun ArticlesList(
                             onToggleUnreadClick = onToggleUnreadClick,
                             onSwiped = onSwiped
                         )
+                        HorizontalDivider()
                     }
+                } else {
+                    SwipeableArticleItem(
+                        articleWithFeed = articleWithFeed,
+                        displayFeedName = isMultiFeedList,
+                        browserApplicationIcon = browserApplicationIcon,
+                        displayCompactItem = displayCompactItems,
+                        onItemClick = { onCardClick(index, articleWithFeed.article) },
+                        onOpenInBrowserClick = onOpenInBrowserClick,
+                        onShareClick = onShareClick,
+                        onStarChanged = onStarChanged,
+                        onToggleUnreadClick = onToggleUnreadClick,
+                        onSwiped = onSwiped
+                    )
                 }
             }
         }
@@ -550,11 +497,9 @@ private fun ArticleCardList() {
         val feed = Feed(id = it.toLong(), title = "Feed $it")
         ArticleWithFeed(a, FeedWithFavIcon(feed, FeedFavIcon()))
     }
-    val articlesFlow = flowOf(PagingData.from(articles))
-    val pagingItems = articlesFlow.collectAsLazyPagingItems()
 
     ArticleCardList(
-        articles = pagingItems,
+        articles = articles,
         isMultiFeedList = false,
         isRefreshing = false,
         browserApplicationIcon = null,

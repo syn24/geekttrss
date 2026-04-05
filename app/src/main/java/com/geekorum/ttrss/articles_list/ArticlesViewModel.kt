@@ -25,12 +25,6 @@ import androidx.core.text.parseAsHtml
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.PagingSource
-import androidx.paging.cachedIn
-import androidx.paging.map
 import com.geekorum.geekdroid.accounts.SyncInProgressLiveData
 import com.geekorum.ttrss.background_job.BackgroundJobManager
 import com.geekorum.ttrss.data.ArticleWithFeed
@@ -44,24 +38,25 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
  * Base [ViewModel] for a list of Articles.
+ *
+ * The article list is exposed as a plain [StateFlow] of [List] backed directly by a Room
+ * `Flow<List<...>>` query. `articleCount` is derived from `articles.size` so list and count
+ * share a single source of truth and can never disagree. No Paging 3 / `cachedIn` layer is
+ * used here — Room's own invalidation tracker refreshes the flow on every write.
  */
 abstract class BaseArticlesViewModel(
     componentFactory: SessionActivityComponent.Factory
@@ -71,7 +66,7 @@ abstract class BaseArticlesViewModel(
     protected val articlesRepository = component.articleRepository
     private val setFieldActionFactory = component.setArticleFieldActionFactory
 
-    abstract val articles: Flow<PagingData<ArticleWithFeed>>
+    abstract val articles: StateFlow<List<ArticleWithFeed>>
 
     private val _pendingArticlesSetUnread = MutableStateFlow(0)
     val pendingArticlesSetUnread = _pendingArticlesSetUnread.asStateFlow()
@@ -79,7 +74,12 @@ abstract class BaseArticlesViewModel(
     abstract val isRefreshing: StateFlow<Boolean>
     abstract val isMultiFeed: StateFlow<Boolean>
     abstract val isAllArticlesFeed: StateFlow<Boolean>
-    abstract val articleCount: StateFlow<Int>
+
+    /** Derived from [articles] — always equals the rendered list size. */
+    val articleCount: StateFlow<Int> by lazy {
+        articles.map { it.size }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    }
 
     private val unreadActionUndoManager = UndoManager<Action>()
 
@@ -87,26 +87,6 @@ abstract class BaseArticlesViewModel(
 
     protected val sortByMostRecentFirst = MutableStateFlow(false)
     protected val needUnread = MutableStateFlow(false)
-
-    /**
-     * Bumped to force creation of a new [Pager] in subclasses.
-     * [articles.refresh()][LazyPagingItems.refresh] only invalidates the current
-     * [PagingSource] which doesn't always propagate through `flatMapLatest + cachedIn`.
-     * Including this in the `combine` that feeds `flatMapLatest` guarantees a brand-new
-     * [PagingSource] is created and the list reloads from the database.
-     */
-    private val refreshTrigger = MutableStateFlow(0)
-
-    /** Exposed to [combine] in subclass article flows. */
-    protected val refreshSignal: StateFlow<Int> get() = refreshTrigger
-
-    /**
-     * Call after external data changes (e.g. sync completion) to force the article
-     * list to reload from the database with a new [PagingSource].
-     */
-    fun notifyDataChanged() {
-        refreshTrigger.value++
-    }
 
     fun setSortByMostRecentFirst(mostRecentFirst: Boolean) {
         sortByMostRecentFirst.value = mostRecentFirst
@@ -139,8 +119,8 @@ abstract class BaseArticlesViewModel(
         _pendingArticlesSetUnread.value = unreadActionUndoManager.nbActions
     }
 
-    protected fun prepareArticlePagingData(pagingData: PagingData<ArticleWithFeed>) =
-        pagingData.map { articleWithFeed ->
+    protected fun List<ArticleWithFeed>.withParsedTitles(): List<ArticleWithFeed> =
+        map { articleWithFeed ->
             articleWithFeed.copy(
                 article = articleWithFeed.article.copy(
                     contentData = articleWithFeed.article.contentData.copy(
@@ -149,119 +129,12 @@ abstract class BaseArticlesViewModel(
                 )
             )
         }
-
-    protected interface ArticlesAccess {
-        val starredArticles: PagingSource<Int, ArticleWithFeed>
-        val publishedArticles: PagingSource<Int, ArticleWithFeed>
-        val freshArticles: PagingSource<Int, ArticleWithFeed>
-        val allArticles: PagingSource<Int, ArticleWithFeed>
-        fun articlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed>
-        fun articlesForTag(tag: String): PagingSource<Int, ArticleWithFeed>
-    }
-
-    protected fun getArticleAccess(mostRecentFirst: Boolean, needUnread: Boolean, freshTimeSec: Long): ArticlesAccess = when {
-        needUnread && mostRecentFirst -> UnreadMostRecentAccess(articlesRepository, freshTimeSec)
-        needUnread && !mostRecentFirst -> UnreadOldestAccess(articlesRepository, freshTimeSec)
-        !needUnread && mostRecentFirst -> MostRecentAccess(articlesRepository, freshTimeSec)
-        !needUnread && !mostRecentFirst -> OldestFirstAccess(articlesRepository, freshTimeSec)
-        else -> UnreadMostRecentAccess(articlesRepository, freshTimeSec)
-    }
-
-    class UnreadMostRecentAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
-        override val starredArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadStarredArticles()
-
-        override val publishedArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadPublishedArticles()
-
-        override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
-
-        override val allArticles: PagingSource<Int, ArticleWithFeed>
-            get() =  articlesRepository.getAllUnreadArticles()
-
-        override fun articlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllUnreadArticlesForFeed(feedId)
-        }
-
-        override fun articlesForTag(tag: String): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllUnreadArticlesForTag(tag)
-        }
-    }
-
-    class UnreadOldestAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
-        override val starredArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadStarredArticlesOldestFirst()
-
-        override val publishedArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadPublishedArticlesOldestFirst()
-
-        override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
-
-        override val allArticles: PagingSource<Int, ArticleWithFeed>
-            get() =  articlesRepository.getAllUnreadArticlesOldestFirst()
-
-        override fun articlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllUnreadArticlesForFeedOldestFirst(feedId)
-        }
-
-        override fun articlesForTag(tag: String): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllUnreadArticlesForTagOldestFirst(tag)
-        }
-    }
-
-
-    class MostRecentAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
-        override val starredArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllStarredArticles()
-
-        override val publishedArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllPublishedArticles()
-
-        override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTimeSec)
-
-        override val allArticles: PagingSource<Int, ArticleWithFeed>
-            get() =  articlesRepository.getAllArticles()
-
-        override fun articlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllArticlesForFeed(feedId)
-        }
-
-        override fun articlesForTag(tag: String): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllArticlesForTag(tag)
-        }
-    }
-
-    class OldestFirstAccess(private val articlesRepository: ArticlesRepository, private val freshTimeSec: Long) : ArticlesAccess {
-        override val starredArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllStarredArticlesOldestFirst()
-
-        override val publishedArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllPublishedArticlesOldestFirst()
-
-        override val freshArticles: PagingSource<Int, ArticleWithFeed>
-            get() = articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTimeSec)
-
-        override val allArticles: PagingSource<Int, ArticleWithFeed>
-            get() =  articlesRepository.getAllArticlesOldestFirst()
-
-        override fun articlesForFeed(feedId: Long): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllArticlesForFeedOldestFirst(feedId)
-        }
-
-        override fun articlesForTag(tag: String): PagingSource<Int, ArticleWithFeed> {
-            return articlesRepository.getAllArticlesForTagOldestFirst(tag)
-        }
-    }
-
 }
 
 /**
  * ViewModel for [ArticlesListScreen]
  */
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = ArticlesListViewModel.Factory::class)
 class ArticlesListViewModel @AssistedInject constructor(
     @Assisted val feedId: Long,
@@ -275,50 +148,41 @@ class ArticlesListViewModel @AssistedInject constructor(
         fun create(feedId: Long): ArticlesListViewModel
     }
 
-
     override val isMultiFeed: StateFlow<Boolean> = MutableStateFlow(Feed.isVirtualFeed(feedId))
 
     override val isAllArticlesFeed: StateFlow<Boolean> = MutableStateFlow(feedId == Feed.FEED_ID_ALL_ARTICLES)
 
-    override val articles: Flow<PagingData<ArticleWithFeed>> = feedsRepository.getFeedById(feedId)
-        .filterNotNull()
-        .flatMapLatest { getArticlesForFeed(it) }
-        .map(::prepareArticlePagingData)
-        .cachedIn(viewModelScope)
-
-    /**
-     * Article count derived from the same query parameters as the PagingSource.
-     * This is the single source of truth for the count displayed on the detail page,
-     * ensuring it always matches the article list.
-     */
-    override val articleCount: StateFlow<Int> = feedsRepository.getFeedById(feedId)
-        .filterNotNull()
-        .flatMapLatest { feed -> getCountForFeed(feed) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    private fun getCountForFeed(feed: Feed): Flow<Int> {
-        return when (feed.id) {
-            Feed.FEED_ID_STARRED -> articlesRepository.getAllStarredArticlesCount()
-            Feed.FEED_ID_PUBLISHED -> articlesRepository.getAllUnreadArticlesCount()
-            Feed.FEED_ID_ALL_ARTICLES -> articlesRepository.getAllArticlesCount()
-            Feed.FEED_ID_FRESH -> articlesRepository.getFreshUnreadCount()
-            else -> articlesRepository.getUnreadArticlesCountForFeed(feed.id)
+    override val articles: StateFlow<List<ArticleWithFeed>> =
+        combine(
+            feedsRepository.getFeedById(feedId).filterNotNull(),
+            sortByMostRecentFirst,
+            articlesRepository.freshTimeSec
+        ) { feed, mostRecentFirst, freshTime ->
+            Triple(feed, mostRecentFirst, freshTime)
+        }.flatMapLatest { (feed, mostRecentFirst, freshTime) ->
+            articleListFlow(feed, mostRecentFirst, freshTime)
         }
-    }
+            .map { it.withParsedTitles() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    init {
-        // Observe article count changes as a reliable, universal refresh trigger.
-        // Room's Flow<Int> count queries fire immediately when the articles table
-        // changes — unlike PagingSource invalidation which gets lost in the
-        // flatMapLatest + cachedIn chain. When the count changes (from ANY source:
-        // SyncAdapter, WorkManager, or direct DB writes), bump refreshSignal to
-        // create a brand-new PagingSource. drop(1) skips the initial replay.
-        // debounce(300) batches rapid changes (e.g. during sync) into one reload.
-        viewModelScope.launch {
-            articleCount.drop(1).debounce(300).collect {
-                notifyDataChanged()
-            }
-        }
+    private fun articleListFlow(
+        feed: Feed, mostRecentFirst: Boolean, freshTime: Long
+    ): Flow<List<ArticleWithFeed>> = when (feed.id) {
+        Feed.FEED_ID_STARRED ->
+            if (mostRecentFirst) articlesRepository.getAllStarredArticles()
+            else articlesRepository.getAllStarredArticlesOldestFirst()
+        Feed.FEED_ID_PUBLISHED ->
+            if (mostRecentFirst) articlesRepository.getAllPublishedArticles()
+            else articlesRepository.getAllPublishedArticlesOldestFirst()
+        Feed.FEED_ID_ALL_ARTICLES ->
+            if (mostRecentFirst) articlesRepository.getAllArticles()
+            else articlesRepository.getAllArticlesOldestFirst()
+        Feed.FEED_ID_FRESH ->
+            if (mostRecentFirst) articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTime)
+            else articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTime)
+        else ->
+            if (mostRecentFirst) articlesRepository.getAllUnreadArticlesForFeed(feed.id)
+            else articlesRepository.getAllUnreadArticlesForFeedOldestFirst(feed.id)
     }
 
     private val refreshJobName = MutableStateFlow<String?>(null)
@@ -331,46 +195,6 @@ class ArticlesListViewModel @AssistedInject constructor(
         else
             backgroundJobManager.isRefreshingStatus(feedId).asFlow()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    private fun getArticlesForFeed(feed: Feed): Flow<PagingData<ArticleWithFeed>> {
-        // For Fresh feed, combine with shared freshTimeSec so time parameter
-        // matches the count query. For other feeds, only react to sort order changes.
-        val paramsFlow = if (feed.id == Feed.FEED_ID_FRESH) {
-            combine(sortByMostRecentFirst, articlesRepository.freshTimeSec, refreshSignal) { sort, time, _ -> sort to time }
-        } else {
-            combine(sortByMostRecentFirst, refreshSignal) { sort, _ -> sort to 0L }
-        }
-
-        return paramsFlow.flatMapLatest { (mostRecentFirst, freshTime) ->
-            val config = PagingConfig(pageSize = 50)
-            val pager = Pager(config) {
-                when (feed.id) {
-                    Feed.FEED_ID_STARRED -> {
-                        if (mostRecentFirst) articlesRepository.getAllStarredArticles()
-                        else articlesRepository.getAllStarredArticlesOldestFirst()
-                    }
-                    Feed.FEED_ID_PUBLISHED -> {
-                        if (mostRecentFirst) articlesRepository.getAllPublishedArticles()
-                        else articlesRepository.getAllPublishedArticlesOldestFirst()
-                    }
-                    Feed.FEED_ID_ALL_ARTICLES -> {
-                        if (mostRecentFirst) articlesRepository.getAllArticles()
-                        else articlesRepository.getAllArticlesOldestFirst()
-                    }
-                    Feed.FEED_ID_FRESH -> {
-                        if (mostRecentFirst) articlesRepository.getAllUnreadArticlesUpdatedAfterTime(freshTime)
-                        else articlesRepository.getAllUnreadArticlesUpdatedAfterTimeOldestFirst(freshTime)
-                    }
-                    else -> {
-                        if (mostRecentFirst) articlesRepository.getAllUnreadArticlesForFeed(feed.id)
-                        else articlesRepository.getAllUnreadArticlesForFeedOldestFirst(feed.id)
-                    }
-                }
-            }
-            pager.flow
-        }
-    }
-
 
     override fun refresh() {
         if (isRefreshing.value) return
@@ -401,50 +225,27 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
 
     override val isAllArticlesFeed: StateFlow<Boolean> = MutableStateFlow(false)
 
-    // Tag views don't have a separate count in the navbar, so this is informational only
-    override val articleCount: StateFlow<Int> = MutableStateFlow(0)
-
     private val account: Account = component.account
 
-    override val articles: Flow<PagingData<ArticleWithFeed>> =
-        getArticlesForTag(tag)
-            .map(::prepareArticlePagingData)
-            .cachedIn(viewModelScope)
+    override val articles: StateFlow<List<ArticleWithFeed>> =
+        combine(sortByMostRecentFirst, needUnread) { mostRecentFirst, needUnread ->
+            mostRecentFirst to needUnread
+        }.flatMapLatest { (mostRecentFirst, needUnread) ->
+            when {
+                needUnread && mostRecentFirst -> articlesRepository.getAllUnreadArticlesForTag(tag)
+                needUnread && !mostRecentFirst -> articlesRepository.getAllUnreadArticlesForTagOldestFirst(tag)
+                !needUnread && mostRecentFirst -> articlesRepository.getAllArticlesForTag(tag)
+                else -> articlesRepository.getAllArticlesForTagOldestFirst(tag)
+            }
+        }
+            .map { it.withParsedTitles() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     override val isRefreshing = SyncInProgressLiveData(account, ArticlesContract.AUTHORITY).asFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-
-    init {
-        // Tag views have no article count query to observe, so observe
-        // the SyncAdapter state directly and refresh when sync completes.
-        viewModelScope.launch {
-            isRefreshing.drop(1).collect { syncing ->
-                if (!syncing) {
-                    notifyDataChanged()
-                }
-            }
-        }
-    }
 
     override fun refresh() {
         if (isRefreshing.value) return
         backgroundJobManager.refresh(account)
     }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun getArticlesForTag(tag: String): Flow<PagingData<ArticleWithFeed>> {
-        val isMostRecentOrderFlow = sortByMostRecentFirst
-        val needUnreadFlow = needUnread
-        return combine(isMostRecentOrderFlow, needUnreadFlow, articlesRepository.freshTimeSec) { mostRecentFirst, needUnread, freshTime ->
-            getArticleAccess(mostRecentFirst, needUnread, freshTime)
-        }.combine(refreshSignal) { access, _ -> access }
-        .flatMapLatest { access ->
-            val config = PagingConfig(pageSize = 50)
-            val pager = Pager(config) {
-                access.articlesForTag(tag)
-            }
-            pager.flow
-        }
-    }
-
 }

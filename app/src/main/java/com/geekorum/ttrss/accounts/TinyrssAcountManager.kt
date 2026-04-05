@@ -26,10 +26,8 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.util.Base64
 import com.geekorum.geekdroid.security.SecretCipher
-import com.geekorum.ttrss.background_job.BackgroundJobManager
 import com.geekorum.ttrss.debugtools.withStrictMode
 import com.geekorum.ttrss.providers.ArticlesContract
-import com.geekorum.ttrss.sync.SyncContract
 import timber.log.Timber
 import java.security.GeneralSecurityException
 import javax.crypto.spec.GCMParameterSpec
@@ -98,15 +96,11 @@ class AndroidTinyrssAccountManager(
     }
 
     override fun initializeAccountSync(account: Account) {
-        val extras = Bundle()
-        extras.putInt(SyncContract.EXTRA_NUMBER_OF_LATEST_ARTICLES_TO_REFRESH, -1)
-        extras.putBoolean(SyncContract.EXTRA_UPDATE_FEED_ICONS, true)
+        // Periodic sync is scheduled via WorkManager (BackgroundJobManager.setupPeriodicRefresh)
+        // to remain reliable on devices with aggressive battery optimization (e.g. Samsung).
+        // Only enable the manual-sync plumbing here — that is still used by pull-to-refresh.
         android.accounts.Account(account.username, ACCOUNT_TYPE).also {
             ContentResolver.setSyncAutomatically(it, ArticlesContract.AUTHORITY, true)
-            ContentResolver.addPeriodicSync(it, ArticlesContract.AUTHORITY, Bundle(),
-                BackgroundJobManager.PERIODIC_REFRESH_JOB_INTERVAL_S)
-            ContentResolver.addPeriodicSync(it, ArticlesContract.AUTHORITY, extras,
-                BackgroundJobManager.PERIODIC_FULL_REFRESH_JOB_INTERVAL_S)
         }
     }
 
