@@ -52,6 +52,12 @@
             android:title="@string/pref_title_in_app_browser_engine"
             android:negativeButtonText="@null"
             />
+
+        <Preference
+            android:key="ignore_battery_optimizations"
+            android:title="@string/pref_title_ignore_battery_optimizations"
+            android:summary="@string/pref_summary_ignore_battery_optimizations"
+            />
     </PreferenceCategory>
 
     <PreferenceCategory

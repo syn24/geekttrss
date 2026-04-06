@@ -117,6 +117,9 @@
     <string name="pref_title_articles_compact_list_items">Compact list</string>
     <string name="pref_summary_articles_compact_list_items">Display compact list of articles on small screens</string>
     <string name="pref_title_in_app_browser_engine">In app browser engine</string>
+    <string name="pref_title_ignore_battery_optimizations">Disable battery optimizations</string>
+    <string name="pref_summary_ignore_battery_optimizations">Keep the unread badge in sync by allowing background refresh. Tap to open system settings.</string>
+    <string name="pref_summary_ignore_battery_optimizations_granted">Background refresh is already allowed. Badge should stay in sync.</string>
     <string name="theme_system_default">Use system default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>

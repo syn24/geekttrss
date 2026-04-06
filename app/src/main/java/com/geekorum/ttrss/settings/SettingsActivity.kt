@@ -24,7 +24,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.PowerManager
 import android.os.StrictMode
+import android.provider.Settings
 import android.view.View
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -143,7 +145,40 @@ class SettingsActivity : BaseActivity(), PreferenceFragmentCompat.OnPreferenceSt
                 entries = inAppBrowser.values.toTypedArray()
             }
 
+            setupIgnoreBatteryOptimizationsPreference()
             displayVersion()
+        }
+
+        override fun onResume() {
+            super.onResume()
+            // Refresh status when user returns from the system settings screen.
+            setupIgnoreBatteryOptimizationsPreference()
+        }
+
+        private fun setupIgnoreBatteryOptimizationsPreference() {
+            val preference = findPreference<Preference>(KEY_IGNORE_BATTERY_OPTIMIZATIONS) ?: return
+            val context = requireContext()
+            val powerManager = context.getSystemService(PowerManager::class.java)
+            val isExempt = powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
+            if (isExempt) {
+                preference.summary = getString(R.string.pref_summary_ignore_battery_optimizations_granted)
+                preference.isEnabled = false
+            } else {
+                preference.summary = getString(R.string.pref_summary_ignore_battery_optimizations)
+                preference.isEnabled = true
+                preference.setOnPreferenceClickListener {
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = "package:${context.packageName}".toUri()
+                    }
+                    try {
+                        startActivity(intent)
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        // Fallback: open the general battery-optimization list.
+                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    }
+                    true
+                }
+            }
         }
 
         private fun displayVersion() {
@@ -187,6 +222,7 @@ class SettingsActivity : BaseActivity(), PreferenceFragmentCompat.OnPreferenceSt
     companion object {
         const val KEY_THEME = "theme"
         const val KEY_IN_APP_BROWSER_ENGINE = "in_app_browser_engine"
+        const val KEY_IGNORE_BATTERY_OPTIMIZATIONS = "ignore_battery_optimizations"
         const val KEY_ABOUT_VERSION = "about_version"
     }
 
