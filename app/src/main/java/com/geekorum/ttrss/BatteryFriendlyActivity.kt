@@ -27,14 +27,14 @@ import android.os.PowerManager
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.distinctUntilChanged
-import androidx.lifecycle.map
-import androidx.lifecycle.switchMap
-import com.geekorum.geekdroid.battery.BatterySaverLiveData
-import com.geekorum.geekdroid.battery.LowBatteryLiveData
+import androidx.lifecycle.asLiveData
+import com.geekorum.geekdroid.battery.isPowerSaveModeFlow
+import com.geekorum.geekdroid.battery.lowBatteryFlow
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 /**
@@ -61,21 +61,18 @@ open class BatteryFriendlyActivity : AppCompatActivity() {
 /**
  * Observe the system to know if we should force night mode on all activities
  */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class ForceNightModeViewModel(
-    private val batterySaverLiveData: LiveData<Boolean>,
-    private val lowBatteryLiveData: LiveData<Boolean>
+class ForceNightModeViewModel @Inject constructor(
+    application: Application,
+    powerManager: PowerManager
 ) : ViewModel() {
 
-    @Inject
-    constructor(application: Application, powerManager: PowerManager) : this(
-        BatterySaverLiveData(application, powerManager), LowBatteryLiveData(application)
-    )
+    private val batterySaverFlow = isPowerSaveModeFlow(application, powerManager)
+    private val lowBatteryFlow = application.lowBatteryFlow()
 
-    val forceNightMode = batterySaverLiveData.switchMap { saving ->
-        // need to provide a copy of batterySaverLiveData to be observed
-        if (saving) batterySaverLiveData.map { it } else lowBatteryLiveData
-    }.distinctUntilChanged()
+    val forceNightMode = batterySaverFlow.flatMapLatest { saving ->
+        if (saving) batterySaverFlow.map { it } else lowBatteryFlow
+    }.distinctUntilChanged().asLiveData()
 
 }
-

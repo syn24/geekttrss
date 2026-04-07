@@ -21,98 +21,30 @@
 package com.geekorum.ttrss.add_feed
 
 import android.content.ComponentName
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.navigation.findNavController
-import com.geekorum.ttrss.Features
-import com.geekorum.ttrss.R
-import com.geekorum.ttrss.add_feed.StartInstallFragmentDirections.Companion.actionInstallManageFeed
 import com.geekorum.ttrss.core.BaseActivity
-import com.geekorum.ttrss.manage_feeds.add_feed.CompleteInstallFragmentDirections.Companion.actionAddFeed
-import com.geekorum.ttrss.on_demand_modules.OnDemandModuleManager
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
-import javax.inject.Inject
 
 
 /**
- * Install the [Features.MANAGE_FEEDS] feature module if necessary then launch [AddFeedActivity] activity
+ * Launch [AddFeedActivity] activity
  */
 @AndroidEntryPoint
 class AddFeedLauncherActivity : BaseActivity() {
-    @Inject
-    lateinit var moduleManager: OnDemandModuleManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        installOrStartManageFeed()
+        try {
+            val freshContext = createPackageContext(packageName, 0)
+            val intent = intent.apply {
+                component = ComponentName.createRelative(freshContext, "com.geekorum.ttrss.manage_feeds.add_feed.AddFeedActivity")
+            }
+            startActivity(intent)
+        } catch (e: PackageManager.NameNotFoundException) {
+            Timber.wtf(e, "Unable to create our package context")
+        }
         finish()
     }
-
-    private fun installOrStartManageFeed() {
-        if (isManageFeedInstalled()) {
-            try {
-                val freshContext = createPackageContext(packageName, 0)
-                val intent = intent.apply {
-                    component = ComponentName.createRelative(freshContext, "com.geekorum.ttrss.manage_feeds.add_feed.AddFeedActivity")
-                }
-                startActivity(intent)
-            } catch (e: PackageManager.NameNotFoundException) {
-                Timber.wtf(e, "Unable to create our package context")
-            }
-        } else {
-            // copy intent but replace component
-            val installerIntent = intent.apply {
-                setClass(this@AddFeedLauncherActivity, AddFeedInstallerActivity::class.java)
-            }
-            startActivity(installerIntent)
-        }
-    }
-
-    private fun isManageFeedInstalled(): Boolean {
-        return moduleManager.installedModules.contains(Features.MANAGE_FEEDS)
-    }
 }
-
-/**
- * Use navigation to install manage_feeds module and start AddFeedActivity
- *
- * This is needed because we can't know when we installed the module and launch the AddFeedActivity:
- *   - the default progress install fragment of navigation doesn't allow us to monitor the installation
- *   - the destination is an Activity which doesn't trigger OnDestinationChangeListener
- */
-@AndroidEntryPoint
-class AddFeedInstallerActivity : BaseActivity() {
-    private var hasShownLauncherFragment = false
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_feed_installer)
-        findNavController(R.id.nav_host_fragment).apply {
-            addOnDestinationChangedListener { _, destination, _ ->
-                when (destination.id) {
-                    R.id.installerStart -> {
-                        if (hasShownLauncherFragment)
-                            finish()
-                        else {
-                            navigate(actionInstallManageFeed())
-                            hasShownLauncherFragment = true
-                        }
-                    }
-                    R.id.installerComplete -> {
-                        navigate(actionAddFeed(intent.extras?.getString(Intent.EXTRA_TEXT)))
-                        finish()
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Only used as a destination to fall back if feature module installation failed.
- * The AddFeedInstallerActivity takes care of the logic.
- */
-class StartInstallFragment : Fragment()

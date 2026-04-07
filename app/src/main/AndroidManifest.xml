@@ -119,23 +119,12 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".add_feed.AddFeedInstallerActivity"
-            android:label="@string/lbl_install_feature_title"
-            android:exported="false"
-            />
-
         <activity android:name=".publish_article.ShareToPublishArticleActivity"
             android:label="@string/activity_share_to_publish_article_title"
             android:theme="@style/AppTheme.ShareToPublishArticleActivity"
             android:noHistory="true"
             android:exported="false"/>
 
-        <activity android:name="com.geekorum.aboutoss.ui.material3.OpenSourceLicensesActivity"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:parentActivityName="com.geekorum.ttrss.settings.SettingsActivity"
-            android:exported="false"
-            tools:replace="android:theme"
-            />
 
         <service android:name="com.geekorum.ttrss.accounts.AuthenticatorService"
                  android:exported="true"

@@ -55,8 +55,11 @@ import com.geekorum.ttrss.sync.workers.SyncFeedsWorker
 import com.geekorum.ttrss.sync.workers.SyncWorkerFactory
 import com.geekorum.ttrss.sync.workers.UpdateArticleStatusWorker
 import timber.log.Timber
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+
+data class RefreshFeedInfo(val workName: String, val collectArticlesWorkerId: UUID)
 
 /**
  * Manage the different background jobs submitted to the JobScheduler class
@@ -73,14 +76,18 @@ class BackgroundJobManager @Inject constructor(
 
     /**
      * Refresh a feed.
-     * @return workmanager unique work name
+     * @return info about the refresh work, including the worker ID to observe for spinner dismissal
      */
-    suspend fun refreshFeed(account: Account, feedId: Long): String {
+    suspend fun refreshFeed(account: Account, feedId: Long): RefreshFeedInfo {
         return impl.refreshFeed(account, feedId)
     }
 
     fun isRefreshingStatus(feedId: Long): LiveData<Boolean> {
         return impl.isRefreshingStatus(feedId)
+    }
+
+    fun isRefreshingByWorkerId(workerId: UUID): LiveData<Boolean> {
+        return impl.isRefreshingByWorkerId(workerId)
     }
 
     fun cancelRefresh(account: Account) {
@@ -165,7 +172,7 @@ private open class BackgroundJobManagerImpl internal constructor(
         Timber.i("BackgroundJobManager.refresh() - requestSync called")
     }
 
-    suspend fun refreshFeed(account: Account, feedId: Long): String {
+    suspend fun refreshFeed(account: Account, feedId: Long): RefreshFeedInfo {
         val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
@@ -209,7 +216,7 @@ private open class BackgroundJobManagerImpl internal constructor(
                 .then(listOf(syncFeeds, collectNewArticleRequest)) // Run in parallel
                 .then(updateStatusRequest)
                 .enqueue().await()
-        return workName
+        return RefreshFeedInfo(workName, collectNewArticleRequest.id)
     }
 
     /**
@@ -224,6 +231,13 @@ private open class BackgroundJobManagerImpl internal constructor(
                     workInfos.any {
                         !it.state.isFinished
                     }
+                }
+    }
+
+    fun isRefreshingByWorkerId(workerId: UUID): LiveData<Boolean> {
+        return WorkManager.getInstance(context)
+                .getWorkInfoByIdLiveData(workerId).map { workInfo ->
+                    workInfo != null && !workInfo.state.isFinished
                 }
     }
 

@@ -65,9 +65,6 @@
 -dontwarn org.openjsse.javax.net.ssl.SSLSocket
 -dontwarn org.openjsse.net.ssl.OpenJSSE
 
-# geekdroid: we don't use firebase stuff
--dontwarn com.geekorum.geekdroid.firebase.**
-
 # Room Database - Prevent R8 from removing DAOs and Entities
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *

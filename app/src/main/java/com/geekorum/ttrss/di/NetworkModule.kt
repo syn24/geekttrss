@@ -49,7 +49,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    internal fun providesOkHttpclient(
+    fun providesOkHttpclient(
         cache: Cache,
         requestLogger: HttpLoggingInterceptor?,
         retrofitInvocationLogger: RetrofitInvocationLogger?
@@ -66,7 +66,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    internal fun providesHttpRequestLogger(): HttpLoggingInterceptor? {
+    fun providesHttpRequestLogger(): HttpLoggingInterceptor? {
         return if (DEBUG_REQUEST) {
             HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
@@ -76,13 +76,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    internal fun providesRetrofitInvocationLogger(): RetrofitInvocationLogger? =
+    fun providesRetrofitInvocationLogger(): RetrofitInvocationLogger? =
         if (DEBUG_RETROFIT_CALL) {
             RetrofitInvocationLogger()
         } else null
 
     @Provides
-    internal fun providesCache(application: Application): Cache {
+    fun providesCache(application: Application): Cache {
         return withStrictMode(allowThreadDiskWrites()) {
             // Enable caching for OkHttp
             val cacheSize = 50 * 1024 * 1024 // 50 MiB
@@ -93,7 +93,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    internal fun providesImageLoader(application: Application, okHttpClient: OkHttpClient): ImageLoader {
+    fun providesImageLoader(application: Application, okHttpClient: OkHttpClient): ImageLoader {
         return ImageLoader.Builder(application)
             .components {
                 // Register custom FileKeyer to avoid checking lastModified on main thread (StrictMode violation)

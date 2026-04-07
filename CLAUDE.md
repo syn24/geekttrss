@@ -11,16 +11,22 @@ Geekttrss is an Android Tiny Tiny RSS reader with transparent offline mode. It u
 ```bash
 ./gradlew build                                    # Build entire project
 ./gradlew :app:assembleDebug                       # Build debug APK
-./gradlew :app:testFreeDebugUnitTest               # Run unit tests (free flavor)
-./gradlew :app:testGoogleDebugUnitTest             # Run unit tests (google flavor)
-./gradlew :app:connectedFreeDebugAndroidTest       # Run instrumented tests (free flavor)
+./gradlew :app:testDebugUnitTest                   # Run unit tests
+./gradlew :app:connectedDebugAndroidTest           # Run instrumented tests
 
 # Run a single test class or method
-./gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.SomeTest"
-./gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.SomeTest.someMethod"
+./gradlew :app:testDebugUnitTest --tests "com.geekorum.ttrss.SomeTest"
+./gradlew :app:testDebugUnitTest --tests "com.geekorum.ttrss.SomeTest.someMethod"
 ```
 
 **Prerequisites:** JDK 17, Android Studio
+
+## Toolchain Versions
+
+- **Kotlin:** 2.2.10 (with KSP 2.2.10-2.0.2)
+- **Gradle:** 9.4.1
+- **Android Gradle Plugin (AGP):** 9.1.0
+- **Compose BOM:** 2025.09.01
 
 ## Module Structure
 
@@ -44,14 +50,9 @@ Note: `:manage_feeds` module exists but is currently disabled in `settings.gradl
 **Key technologies:**
 - **DI:** Hilt (with `HiltRunner` for instrumented tests)
 - **Async:** Kotlin Coroutines & Flow throughout
-- **DB:** Room (pinned to 2.6.1 — do not upgrade to 2.7.x, critical bug)
+- **DB:** Room 2.8.4
 - **Networking:** Retrofit 3.0.0
 - **Paging:** Paging 3
-
-## Build Flavors
-
-- `free` — F-Droid distribution, no Google Play services
-- `google` — Google Play Store distribution, includes Crashlytics
 
 ## Dependency Management
 

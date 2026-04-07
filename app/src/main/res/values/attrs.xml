@@ -32,4 +32,8 @@
         -->
     <attr name="appBarToolbarStyle" format="reference" />
     <attr name="appBarCollapsingToolbarStyle" format="reference" />
+
+    <!-- Declare moduleName as in androidx.navigation:navigation-dynamic-features-fragment.
+     It is ignored as dynamic features are not used -->
+    <attr name="moduleName" format="string"/>
 </resources>

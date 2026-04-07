@@ -39,42 +39,42 @@ import javax.inject.Singleton
 object ArticlesDatabaseModule {
 
     @Provides
-    internal fun providesRoomDbHelper(database: ArticlesDatabase): SupportSQLiteOpenHelper {
+    fun providesRoomDbHelper(database: ArticlesDatabase): SupportSQLiteOpenHelper {
         return database.openHelper
     }
 
     @Provides
-    internal fun providesArticleDao(database: ArticlesDatabase): ArticleDao {
+    fun providesArticleDao(database: ArticlesDatabase): ArticleDao {
         return database.articleDao()
     }
 
     @Provides
-    internal fun providesTransactionsDao(database: ArticlesDatabase): TransactionsDao {
+    fun providesTransactionsDao(database: ArticlesDatabase): TransactionsDao {
         return database.transactionsDao()
     }
 
     @Provides
-    internal fun providesSynchronizationDao(database: ArticlesDatabase): SynchronizationDao {
+    fun providesSynchronizationDao(database: ArticlesDatabase): SynchronizationDao {
         return database.synchronizationDao()
     }
 
     @Provides
-    internal fun providesPurgeArticlesDao(database: ArticlesDatabase): PurgeArticlesDao {
+    fun providesPurgeArticlesDao(database: ArticlesDatabase): PurgeArticlesDao {
         return database.articlesProvidersDao()
     }
 
     @Provides
-    internal fun providesFeedsDao(database: ArticlesDatabase): FeedsDao {
+    fun providesFeedsDao(database: ArticlesDatabase): FeedsDao {
         return database.feedsDao()
     }
 
     @Provides
-    internal fun providesAccountInfoDao(database: ArticlesDatabase): AccountInfoDao {
+    fun providesAccountInfoDao(database: ArticlesDatabase): AccountInfoDao {
         return database.accountInfoDao()
     }
 
     @Provides
-    internal fun providesManageFeedsDao(database: ArticlesDatabase) : ManageFeedsDao {
+    fun providesManageFeedsDao(database: ArticlesDatabase) : ManageFeedsDao {
         return database.manageFeedsDao()
     }
 }
@@ -85,7 +85,7 @@ object DiskDatabaseModule {
 
     @Provides
     @Singleton
-    internal fun providesAppDatabase(application: Application?): ArticlesDatabase {
+    fun providesAppDatabase(application: Application?): ArticlesDatabase {
         return Room.databaseBuilder(application!!, ArticlesDatabase::class.java, ArticlesDatabase.DATABASE_NAME)
             .fallbackToDestructiveMigrationOnDowngrade()
             .addMigrations(*ALL_MIGRATIONS.toTypedArray())

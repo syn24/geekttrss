@@ -56,7 +56,8 @@ class ArticleSynchronizer @AssistedInject constructor(
     private val account: Account,
     private val databaseService: DatabaseService,
     private val feedSettingsRepository: FeedSettingsRepository,
-    private val badgeManager: BadgeManager
+    private val badgeManager: BadgeManager,
+    private val syncProgressTracker: SyncProgressTracker
 ) : CancellableSyncAdapter.CancellableSync() {
 
     @AssistedFactory
@@ -76,11 +77,13 @@ class ArticleSynchronizer @AssistedInject constructor(
 
     override suspend fun sync() {
         Timber.i("ArticleSynchronizer.sync() started")
+        syncProgressTracker.onSyncStarted()
         try {
             syncInfoAndFeeds()
             Timber.i("ArticleSynchronizer: syncInfoAndFeeds completed")
             collectNewArticles()
             Timber.i("ArticleSynchronizer: collectNewArticles completed")
+            syncProgressTracker.onArticlesCollected()
             updateArticlesStatus()
             Timber.i("ArticleSynchronizer: updateArticlesStatus completed")
             purgeOldArticles()
@@ -95,6 +98,7 @@ class ArticleSynchronizer @AssistedInject constructor(
             Timber.log(if (e is CancellationException) Log.WARN else Log.ERROR,
                 e,"unable to synchronize articles")
         } finally {
+            syncProgressTracker.onSyncFinished()
             try {
                 badgeManager.updateBadgeNow()
                 Timber.i("ArticleSynchronizer: badge updated")
@@ -252,6 +256,7 @@ class ArticleSynchronizer @AssistedInject constructor(
 
     override fun onSyncCancelled() {
         super.onSyncCancelled()
+        syncProgressTracker.onSyncFinished()
         syncInfoAndFeedWorkId?.let {
             workManager.cancelWorkById(it)
         }

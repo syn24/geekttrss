@@ -31,14 +31,11 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geekorum.geekdroid.app.ModalBottomSheetActivity
 import com.geekorum.geekdroid.app.lifecycle.EventObserver
@@ -89,7 +86,7 @@ class AddFeedActivity : ModalBottomSheetActivity()
 private fun AddFeedContent(vm: AddFeedViewModel) {
     AppTheme3 {
         val feeds by vm.availableFeeds.collectAsStateWithLifecycle()
-        val accounts by vm.accounts.observeAsState(emptyArray())
+        val accounts by vm.accounts.collectAsStateWithLifecycle()
         AddFeedContent(
             isLoading = feeds == null,
             isSubscribeEnabled = vm.canSubscribe,
@@ -111,7 +108,7 @@ private fun AddFeedContent(
     isSubscribeEnabled: Boolean,
     feeds: Collection<FeedsFinder.FeedResult>,
     selectedFeed: FeedsFinder.FeedResult?,
-    accounts: Array<Account>,
+    accounts: List<Account>,
     selectedAccount: Account?,
     onFeedSelectionChange: (FeedsFinder.FeedResult) -> Unit,
     onAccountSelectionChange: (Account) -> Unit,
@@ -224,7 +221,7 @@ private fun FeedSelector(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountSelector(
-    accounts: Array<Account>,
+    accounts: List<Account>,
     selectedAccount: Account?,
     onSelectionChange: (Account) -> Unit,
     modifier: Modifier = Modifier
@@ -340,7 +337,7 @@ private fun PreviewAddFeedContent() {
                 title = "The github blog feed comment"
             )
         )
-        val accounts = listOf(Account("first", "wtv"), Account("second", "wet") ).toTypedArray()
+        val accounts = listOf(Account("first", "wtv"), Account("second", "wet") )
         var selectedAccount by remember { mutableStateOf(accounts.first()) }
         var selectedFeed by remember { mutableStateOf(feeds.firstOrNull()) }
 
@@ -359,8 +356,3 @@ private fun PreviewAddFeedContent() {
 }
 
 
-/**
- * Only used as a destination in the feature modules.
- * The AddFeedInstallerActivity takes care of the logic.
- */
-class CompleteInstallFragment : Fragment()

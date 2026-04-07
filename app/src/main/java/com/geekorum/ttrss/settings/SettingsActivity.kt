@@ -59,7 +59,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import com.geekorum.aboutoss.ui.material3.OpenSourceLicensesActivity
 import com.geekorum.ttrss.BuildConfig
 import com.geekorum.ttrss.R
 import com.geekorum.ttrss.core.BaseActivity
@@ -82,10 +81,6 @@ class SettingsActivity : BaseActivity(), PreferenceFragmentCompat.OnPreferenceSt
         // keep track of the FragmentContainer id
         supportFragmentManager.addFragmentOnAttachListener { fragmentManager, fragment ->
             fragmentContainerId = fragment.id
-        }
-
-        OpenSourceLicensesActivity.themeProvider = { content ->
-            AppTheme3(content = content)
         }
 
         setContent {

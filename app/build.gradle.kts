@@ -21,33 +21,19 @@
 
 import com.geekorum.build.configureVersionChangeset
 import com.geekorum.build.dualTestImplementation
-import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
-import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsPlugin
 import com.google.protobuf.gradle.GenerateProtoTask
 import com.google.protobuf.gradle.id
-import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompileTool
 
 plugins {
     id("com.geekorum.build.conventions.android-application")
     alias(libs.plugins.kotlin.ksp)
-    alias(libs.plugins.com.geekorum.gms.oss.license)
     id("com.geekorum.build.android-tests")
     id("com.geekorum.build.android-avdl")
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.androidx.navigation.safeargs.kotlin)
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.google.protobuf)
     alias(libs.plugins.kotlinx.serialization)
-}
-
-// workaround bug https://issuetracker.google.com/issues/275534543
-// try to remove it on next navigation-safe-args plugin release
-buildscript {
-    dependencies {
-        classpath(libs.android.gradle.plugin)
-        classpath("com.squareup:javapoet:1.13.0")
-    }
 }
 
 androidComponents {
@@ -60,7 +46,7 @@ androidComponents {
 android {
     namespace = "com.geekorum.ttrss"
     defaultConfig {
-        applicationId = "com.geekorum.ttrss"
+        applicationId = "com.geekorum.ttrss.free"
         targetSdk = 36
 
         sourceSets {
@@ -92,20 +78,6 @@ android {
         compose = true
         buildConfig = true
     }
-
-    flavorDimensions += "distribution"
-    productFlavors {
-        register("free") {
-            dimension = "distribution"
-            applicationIdSuffix = ".free"
-        }
-
-        register("google") {
-            dimension = "distribution"
-            versionNameSuffix = "-google"
-        }
-    }
-
 
     packaging {
         // Fix: https://github.com/Kotlin/kotlinx.coroutines/issues/2023
@@ -149,16 +121,20 @@ protobuf {
     }
 }
 
-// TODO remove when fixed. Fix ksp/protobuf dependendencies
+// Fix ksp/protobuf dependencies — KSP needs protobuf-generated sources
 // https://github.com/google/ksp/issues/1590
 androidComponents {
     onVariants(selector().all()) { variant ->
         afterEvaluate {
-            val protoTask =
-                project.tasks.named<GenerateProtoTask>("generate" + variant.name.replaceFirstChar { it.uppercaseChar() } + "Proto")
-
-            project.tasks.named<AbstractKotlinCompileTool<*>>("ksp" + variant.name.replaceFirstChar { it.uppercaseChar() } + "Kotlin") {
-                setSource(protoTask)
+            val variantName = variant.name.replaceFirstChar { it.uppercaseChar() }
+            val protoTask = tasks.named<GenerateProtoTask>("generate${variantName}Proto")
+            val protoJavaDir = layout.buildDirectory.dir("generated/sources/proto/${variant.name}/java")
+            val protoKotlinDir = layout.buildDirectory.dir("generated/sources/proto/${variant.name}/kotlin")
+            variant.sources.java?.addStaticSourceDirectory(protoJavaDir.get().asFile.absolutePath)
+            variant.sources.kotlin?.addStaticSourceDirectory(protoJavaDir.get().asFile.absolutePath)
+            variant.sources.kotlin?.addStaticSourceDirectory(protoKotlinDir.get().asFile.absolutePath)
+            tasks.named("ksp${variantName}Kotlin") {
+                dependsOn(protoTask)
             }
         }
     }
@@ -211,8 +187,6 @@ dependencies {
 
     //geekdroid
     implementation(libs.geekdroid)
-    "googleImplementation"(libs.geekdroid.firebase)
-    implementation(libs.aboutoss.ui.material3)
 
     implementation(project(":htmlparsers"))
     implementation(project(":webapi"))
@@ -271,19 +245,6 @@ dependencies {
     testImplementation(libs.turbine)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
-    implementation(enforcedPlatform(libs.firebase.bom))
-    add("googleImplementation", libs.firebase.crashlytics)
-    // ensure that the free flavor don't get any firebase dependencies
-    configurations["freeImplementation"].exclude(group = "com.google.firebase")
-    configurations["freeImplementation"].exclude(group = "com.google.android.play")
-    configurations["freeImplementation"].exclude(group = "com.google.android.gms")
-
-    add("googleImplementation", libs.google.play.feature.delivery)
-    add("googleImplementation", libs.google.play.app.update)
-    add("googleImplementation", libs.google.play.review)
-    add("googleImplementation", libs.gms.play.services.base)
-    add("googleImplementation", libs.androidx.navigation.dynamic.features.fragment)
-
     // api dependencies for features modules
     api(libs.androidx.appcompat)
     api(libs.androidx.work.runtime)
@@ -310,23 +271,3 @@ dependencies {
     coreLibraryDesugaring(libs.android.desugar.jdk)
 }
 
-//TODO remove. Force room 2.6.1 for now has 2.7.x has critical bug for us
-// see  https://issuetracker.google.com/issues/413924560
-configurations.all {
-    resolutionStrategy {
-        force("androidx.room:room-ktx:2.6.1")
-        force("androidx.room:room-runtime:2.6.1")
-        force("androidx.room:room-paging:2.6.1")
-        force("androidx.room:room-testing:2.6.1")
-        force("androidx.room:room-compiler:2.6.1")
-    }
-}
-
-apply {
-    val playServicesActivated = file("google-services.json").exists()
-    if (playServicesActivated) {
-        // needs to be applied after configuration
-        plugin("com.google.gms.google-services")
-        plugin("com.google.firebase.crashlytics")
-    }
-}

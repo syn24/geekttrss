@@ -29,14 +29,13 @@ import androidx.compose.runtime.setValue
 import androidx.databinding.ObservableBoolean
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.geekorum.geekdroid.accounts.AccountsLiveData
+import com.geekorum.geekdroid.accounts.accountsFlow
 import com.geekorum.geekdroid.app.lifecycle.EmptyEvent
 import com.geekorum.ttrss.accounts.AccountAuthenticator
 import com.geekorum.ttrss.core.CoroutineDispatchersProvider
@@ -44,7 +43,11 @@ import com.geekorum.ttrss.manage_feeds.add_feed.FeedsFinder.FeedResult
 import com.geekorum.ttrss.manage_feeds.workers.SubscribeWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
@@ -65,7 +68,8 @@ class AddFeedViewModel @Inject constructor(
 
     private val _availableFeeds = MutableStateFlow<Collection<FeedResult>?>(null)
     val availableFeeds = _availableFeeds.asStateFlow()
-    val accounts = AccountsLiveData(accountManager, AccountAuthenticator.TTRSS_ACCOUNT_TYPE)
+    val accounts = accountManager.accountsFlow(AccountAuthenticator.TTRSS_ACCOUNT_TYPE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val _completeEvent = MutableLiveData<EmptyEvent>()
     val complete: LiveData<EmptyEvent> = _completeEvent
     var canSubscribe by mutableStateOf(false)
@@ -77,18 +81,10 @@ class AddFeedViewModel @Inject constructor(
     var selectedAccount: Account? by mutableStateOf(null)
         private set
 
-    private val accountObserver = Observer<Array<Account>> {
-        val accounts = checkNotNull(it)
-        selectedAccount = accounts.singleOrNull()
-    }
-
     init {
-        accounts.observeForever(accountObserver)
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        accounts.removeObserver(accountObserver)
+        accounts.onEach { accountList ->
+            selectedAccount = accountList.singleOrNull()
+        }.launchIn(viewModelScope)
     }
 
     fun init(documentUrl: HttpUrl?) = viewModelScope.launch {

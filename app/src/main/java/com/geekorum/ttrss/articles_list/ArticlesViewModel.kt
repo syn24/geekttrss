@@ -25,14 +25,14 @@ import androidx.core.text.parseAsHtml
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
-import com.geekorum.geekdroid.accounts.SyncInProgressLiveData
 import com.geekorum.ttrss.background_job.BackgroundJobManager
+import com.geekorum.ttrss.background_job.RefreshFeedInfo
 import com.geekorum.ttrss.data.ArticleWithFeed
 import com.geekorum.ttrss.data.Feed
-import com.geekorum.ttrss.providers.ArticlesContract
 import com.geekorum.ttrss.session.Action
 import com.geekorum.ttrss.session.SessionActivityComponent
 import com.geekorum.ttrss.session.UndoManager
+import com.geekorum.ttrss.sync.SyncProgressTracker
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -140,6 +140,7 @@ class ArticlesListViewModel @AssistedInject constructor(
     @Assisted val feedId: Long,
     feedsRepository: FeedsRepository,
     private val backgroundJobManager: BackgroundJobManager,
+    private val syncProgressTracker: SyncProgressTracker,
     componentFactory: SessionActivityComponent.Factory
 ) : BaseArticlesViewModel(componentFactory) {
 
@@ -185,15 +186,15 @@ class ArticlesListViewModel @AssistedInject constructor(
             else articlesRepository.getAllUnreadArticlesForFeedOldestFirst(feed.id)
     }
 
-    private val refreshJobName = MutableStateFlow<String?>(null)
+    private val refreshFeedInfo = MutableStateFlow<RefreshFeedInfo?>(null)
 
     private val account = component.account
 
-    override val isRefreshing = refreshJobName.flatMapLatest {
+    override val isRefreshing = refreshFeedInfo.flatMapLatest {
         if (it == null)
-            SyncInProgressLiveData(account, ArticlesContract.AUTHORITY).asFlow()
+            syncProgressTracker.isCollectingArticles
         else
-            backgroundJobManager.isRefreshingStatus(feedId).asFlow()
+            backgroundJobManager.isRefreshingByWorkerId(it.collectArticlesWorkerId).asFlow()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     override fun refresh() {
@@ -202,7 +203,7 @@ class ArticlesListViewModel @AssistedInject constructor(
             if (Feed.isVirtualFeed(feedId)) {
                 backgroundJobManager.refresh(account)
             } else {
-                refreshJobName.value = backgroundJobManager.refreshFeed(account, feedId)
+                refreshFeedInfo.value = backgroundJobManager.refreshFeed(account, feedId)
             }
         }
     }
@@ -213,6 +214,7 @@ class ArticlesListViewModel @AssistedInject constructor(
 class ArticlesListByTagViewModel @AssistedInject constructor(
     @Assisted val tag: String,
     private val backgroundJobManager: BackgroundJobManager,
+    private val syncProgressTracker: SyncProgressTracker,
     componentFactory: SessionActivityComponent.Factory
 ) : BaseArticlesViewModel(componentFactory) {
 
@@ -241,7 +243,7 @@ class ArticlesListByTagViewModel @AssistedInject constructor(
             .map { it.withParsedTitles() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    override val isRefreshing = SyncInProgressLiveData(account, ArticlesContract.AUTHORITY).asFlow()
+    override val isRefreshing = syncProgressTracker.isCollectingArticles
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     override fun refresh() {

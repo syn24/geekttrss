@@ -28,7 +28,6 @@ import android.os.strictmode.Violation
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.startup.Initializer
-import com.geekorum.ttrss.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import timber.log.Timber
 import java.util.concurrent.Executors
@@ -59,10 +58,7 @@ class StrictModeInitializer : Initializer<Unit> {
             .detectLeakedSqlLiteObjects()
             .apply {
                 detectContentUriWithoutPermission()
-                // because crashlytics don't tag its socket
-                if (BuildConfig.FLAVOR != "google") {
-                    detectUntaggedSockets()
-                }
+                detectUntaggedSockets()
                 // appcompat use nonsdk
                 // detectNonSdkApiUsage()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

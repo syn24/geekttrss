@@ -46,7 +46,7 @@ abstract class BackgroundJobsModule {
         }
 
         @Provides
-        internal fun providesApplicationWorkerFactory(
+        fun providesApplicationWorkerFactory(
             hiltWorkerFactory: HiltWorkerFactory,
             featuresWorkerFactory: FeaturesWorkerFactory
         ): WorkerFactory {

@@ -75,15 +75,6 @@
             android:title="@string/pref_category_about">
 
         <Preference
-                android:key="about_oss"
-                android:title="@string/pref_title_oss_license"
-                android:summary="@string/pref_summary_oss_license"
-                >
-            <intent android:targetClass="com.geekorum.aboutoss.ui.material3.OpenSourceLicensesActivity"
-                    android:targetPackage="@string/package_name"
-                    />
-        </Preference>
-        <Preference
                 android:key="about_version"
                 android:defaultValue="0"
                 android:title="@string/pref_title_about_version"

@@ -18,8 +18,7 @@
 # along with Geekttrss.  If not, see <http://www.gnu.org/licenses/>.
 #
 [versions]
-# AGP 8.13.2 - AGP 9.0 has compatibility issues with SafeArgs and OSS License plugins
-android-gradle-plugin = "8.13.2"
+android-gradle-plugin = "9.1.0"
 accompanist = "0.37.3"
 android-desugar-jdk = "2.1.5"
 androidx-annotation = "1.9.1"
@@ -40,8 +39,7 @@ androidx-lifecycle = "2.9.4"
 androidx-navigation = "2.9.5"
 androidx-paging = "3.3.6"
 androidx-preferences = "1.2.1"
-# stay on 2.6.x until https://issuetracker.google.com/issues/413924560 is fixed
-androidx-room = "2.6.1"
+androidx-room = "2.8.4"
 androidx-startup = "1.2.0"
 androidx-work = "2.10.5"
 android-material = "1.13.0"
@@ -54,18 +52,11 @@ license-gradle-plugin = "0.16.1"
 materialKolor = "3.0.1"
 okio = "3.16.0"
 okhttp = "5.1.0"
-play-publisher = "3.12.1"
-# downgrade protobuf to 4.26.1 because of conflict with firebase
-# https://github.com/firebase/firebase-android-sdk/issues/5997
 protobuf = "4.26.1"
 timber = "5.0.1"
 truth = "1.4.5"
 turbine = "1.2.1"
 mockk = "1.14.5"
-firebase-bom = "34.3.0"
-google-play-core = "2.1.0"
-google-play-core-review = "2.0.2"
-gms-play-services-base = "18.9.0"
 javax-inject = "1"
 ksoup =  "0.2.5"
 retrofit = "3.0.0"
@@ -73,9 +64,8 @@ retrofit-kotlinx-serialization-converter = "1.0.0"
 leakcanary = "2.14"
 coil = "2.7.0"
 geekdroid = "geekttrss-1.6.8"
-aboutoss = "0.2.1"
-kotlin = "2.1.20"
-kotlin-ksp = "2.1.20-1.0.31"
+kotlin = "2.2.10"
+kotlin-ksp = "2.2.10-2.0.2"
 uiautomator = "2.3.0"
 bundletool = "1.17.1"
 
@@ -84,14 +74,10 @@ bundletool = "1.17.1"
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
 android-dynamic-feature = { id = "com.android.dynamic-feature", version.ref = "android-gradle-plugin" }
 androidx-room = { id = "androidx.room", version.ref = "androidx-room" }
-google-gms-google-services = { id = "com.google.gms.google-services", version = "4.4.3" }
 # Use our fork of oss-license-plugin to have reproducible builds
 # Waiting for feedback on https://github.com/google/play-services-plugins/pull/268
 # google-gms-oss-license = { id = "com.google.android.gms.oss-licenses-plugin", version = "0.10.6.1" }
-com-geekorum-gms-oss-license = { id = "com.geekorum.gms.oss-licenses-plugin", version = "0.10.6" }
 com-geekorum-avdl-flydroid = { id = "com.geekorum.gradle.avdl.providers.flydroid", version.ref = "avdl" }
-firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "3.0.6" }
-androidx-navigation-safeargs-kotlin = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidx-navigation" }
 dagger-hilt-android = { id = "dagger.hilt.android.plugin", version.ref = "dagger" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
@@ -99,8 +85,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "kotlin-ksp" }
 license-gradle-plugin = { id = "com.github.hierynomus.license", version.ref = "license-gradle-plugin" }
-gradle-play-publisher = { id = "com.github.triplet.play", version.ref = "play-publisher"}
-google-protobuf = { id = "com.google.protobuf", version = "0.9.5" }
+google-protobuf = { id = "com.google.protobuf", version = "0.9.6" }
 
 [libraries]
 # build plugins dependencies
@@ -160,7 +145,6 @@ androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-kt
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidx-navigation"}
-androidx-navigation-dynamic-features-fragment = { module = "androidx.navigation:navigation-dynamic-features-fragment", version.ref = "androidx-navigation"}
 androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment", version.ref = "androidx-navigation"}
 androidx-navigation-ui = { module = "androidx.navigation:navigation-ui", version.ref = "androidx-navigation"}
 
@@ -193,8 +177,6 @@ dagger-hilt-android-testing = { module = "com.google.dagger:hilt-android-testing
 dagger-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "dagger" }
 
 geekdroid = { module = "com.geekorum.geekdroid:geekdroid", version.ref = "geekdroid" }
-geekdroid-firebase = { module = "com.geekorum.geekdroid:geekdroid-firebase", version.ref = "geekdroid" }
-aboutoss-ui-material3 = { module = "com.geekorum.aboutoss:ui-material3", version.ref = "aboutoss" }
 
 kotlinx-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core" }
@@ -233,13 +215,4 @@ truth = { module = "com.google.truth:truth", version.ref = "truth" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 
-# Non free
-firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom"}
-firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
-
-google-play-app-update = { module = "com.google.android.play:app-update-ktx", version.ref = "google-play-core"}
-google-play-feature-delivery = { module = "com.google.android.play:feature-delivery-ktx", version.ref = "google-play-core"}
-google-play-review = { module = "com.google.android.play:review-ktx", version.ref = "google-play-core" }
-
-gms-play-services-base = { module = "com.google.android.gms:play-services-base", version.ref = "gms-play-services-base" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }

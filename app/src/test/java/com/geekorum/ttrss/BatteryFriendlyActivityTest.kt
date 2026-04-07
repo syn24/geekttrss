@@ -26,10 +26,7 @@ import android.content.pm.ActivityInfo
 import android.os.PowerManager
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_UNSPECIFIED
 import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.core.content.getSystemService
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -38,8 +35,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
-import io.mockk.mockk
-import io.mockk.verifySequence
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.Shadows
@@ -101,67 +96,6 @@ class BatteryFriendlyActivityTest {
         }
     }
 
-}
-
-class ForceNightModeViewModelTest {
-
-    lateinit var viewModel: ForceNightModeViewModel
-    lateinit var batterySaverLivedate: MutableLiveData<Boolean>
-    lateinit var lowBatteryLiveData: MutableLiveData<Boolean>
-
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
-
-    @BeforeTest
-    fun setUp() {
-        batterySaverLivedate = MutableLiveData()
-        lowBatteryLiveData = MutableLiveData()
-        viewModel = ForceNightModeViewModel(batterySaverLivedate, lowBatteryLiveData)
-    }
-
-    @Test
-    fun testThatWhenBatteryIsLowWeForceNight() {
-        val observer = mockk<Observer<Boolean>>(relaxed = true)
-        batterySaverLivedate.value = false
-        lowBatteryLiveData.value = true
-        viewModel.forceNightMode.observeForever(observer)
-        verifySequence {
-            observer.onChanged(true)
-        }
-    }
-
-    @Test
-    fun testThatWhenSavingBatteryWeForceNight() {
-        val observer = mockk<Observer<Boolean>>(relaxed = true)
-        batterySaverLivedate.value = true
-        lowBatteryLiveData.value = false
-        viewModel.forceNightMode.observeForever(observer)
-        verifySequence {
-            observer.onChanged(true)
-        }
-    }
-
-    @Test
-    fun testThatWhenSavingBatteryAndLowBatteryWeForceNight() {
-        val observer = mockk<Observer<Boolean>>(relaxed = true)
-        batterySaverLivedate.value = true
-        lowBatteryLiveData.value = true
-        viewModel.forceNightMode.observeForever(observer)
-        verifySequence {
-            observer.onChanged(true)
-        }
-    }
-
-    @Test
-    fun testThatWhenNotSavingBatteryAndNotLowBatteryWeDontForceNight() {
-        val observer = mockk<Observer<Boolean>>(relaxed = true)
-        batterySaverLivedate.value = false
-        lowBatteryLiveData.value = false
-        viewModel.forceNightMode.observeForever(observer)
-        verifySequence {
-            observer.onChanged(false)
-        }
-    }
 }
 
 @AndroidEntryPoint

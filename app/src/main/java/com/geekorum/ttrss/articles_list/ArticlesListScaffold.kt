@@ -403,7 +403,7 @@ fun PreviewArticlesListScaffoldTablet() {
                 snackbarHostState = snackbarHostState,
                 topBar = {
                     TopAppBar(
-                        title = { Text("Magazine") },
+                        title = { Text("Articles") },
                     )
                 },
                 navigationMenu = {

@@ -38,14 +38,11 @@ fun Provider<PluginDependency>.gav(): String {
 }
 
 dependencies {
-    // play-publisher depends on AGP original not api. So we need to include it here
-    // in order to be in the correct classpath
     implementation(libs.android.gradle.plugin)
     implementation(libs.plugins.kotlin.android.gav())
 
     implementation(libs.android.gradle.plugin.api)
     implementation(libs.plugins.license.gradle.plugin.gav())
-    implementation(libs.plugins.gradle.play.publisher.gav())
     implementation(libs.plugins.com.geekorum.avdl.flydroid.gav())
 
     // Force javapoet to fix Hilt plugin compatibility
