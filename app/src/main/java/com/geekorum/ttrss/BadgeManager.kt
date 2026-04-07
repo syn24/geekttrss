@@ -23,6 +23,8 @@ package com.geekorum.ttrss
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -94,14 +96,22 @@ class BadgeManager @Inject constructor(
             notificationManager.cancel(NOTIF_ID)
             return
         }
+        val launchIntent = Intent(application, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            application, 0, launchIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(application, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(application.resources.getQuantityString(
                 R.plurals.notif_unread_articles_title, count, count))
+            .setContentIntent(pendingIntent)
             .setNumber(count)
             .setSilent(true)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setAutoCancel(false)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
         @Suppress("MissingPermission")
         notificationManager.notify(NOTIF_ID, notification)
