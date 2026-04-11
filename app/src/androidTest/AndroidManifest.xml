@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Test-only manifest override.
+
+    Android's AccountManagerService will auto-bind any service declaring an
+    `android.accounts.AccountAuthenticator` or `android.content.SyncAdapter`
+    intent-filter when an account of the app's type exists on the device.
+    In instrumented tests the Application is swapped for HiltTestApplication,
+    which does not include the entry points those services rely on, so the
+    binding crashes the test process.
+
+    Removing the two services here prevents Android from binding them during
+    tests, while leaving the production manifest untouched. Tests that need
+    to exercise authenticator/sync-adapter behavior must not rely on these
+    manifest entries.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <service android:name="com.geekorum.ttrss.accounts.AuthenticatorService"
+                 tools:node="remove"/>
+        <service android:name="com.geekorum.ttrss.sync.ArticleSyncService"
+                 tools:node="remove"/>
+    </application>
+</manifest>

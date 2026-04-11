@@ -22,15 +22,12 @@ package com.geekorum.ttrss.accounts
 
 import android.accounts.AccountManager
 import android.content.ContentResolver
-import android.content.PeriodicSync
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.geekorum.geekdroid.security.SecretCipher
 import com.geekorum.geekdroid.security.SecretEncryption
-import com.geekorum.ttrss.background_job.BackgroundJobManager
 import com.geekorum.ttrss.providers.ArticlesContract
-import com.geekorum.ttrss.sync.SyncContract
 import com.google.common.truth.Truth.assertThat
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -63,6 +60,9 @@ class AndroidTinyrssAccountManagerTest {
         androidAccountManager = AccountManager.get(ApplicationProvider.getApplicationContext())
         secretCipher = SecretEncryption().getSecretCipher("instrumented test")
         accountManager = AndroidTinyrssAccountManager(androidAccountManager, secretCipher)
+        // Ensure no leftover "test" account from a previous run or test — otherwise
+        // addAccountExplicitly below returns false because the account already exists.
+        androidAccountManager.removeAccountExplicitly(androidAccount)
     }
 
 
@@ -102,24 +102,15 @@ class AndroidTinyrssAccountManagerTest {
             putString(AccountAuthenticator.USERDATA_URL, "https://exemple.com")
         }
         androidAccountManager.addAccountExplicitly(androidAccount, "password", urlBundle)
-        val periodicRefreshSync = PeriodicSync(androidAccount, ArticlesContract.AUTHORITY, Bundle.EMPTY,
-            BackgroundJobManager.PERIODIC_REFRESH_JOB_INTERVAL_S)
-
-        val fullExtra = Bundle().apply {
-            putInt(SyncContract.EXTRA_NUMBER_OF_LATEST_ARTICLES_TO_REFRESH, -1)
-            putBoolean(SyncContract.EXTRA_UPDATE_FEED_ICONS, true)
-        }
-        val periodicFullRefreshSync = PeriodicSync(androidAccount, ArticlesContract.AUTHORITY, fullExtra,
-            BackgroundJobManager.PERIODIC_FULL_REFRESH_JOB_INTERVAL_S)
 
         accountManager.initializeAccountSync(modelAccount)
         // the system needs some time to initialize
-        runBlocking{ delay(1000) }
+        runBlocking { delay(1000) }
 
+        // initializeAccountSync now only enables sync-on-demand via setSyncAutomatically.
+        // Periodic sync scheduling was moved to WorkManager (BackgroundJobManager.setupPeriodicRefresh)
+        // for reliability on devices with aggressive battery optimization.
         val syncAutomatically = ContentResolver.getSyncAutomatically(androidAccount, ArticlesContract.AUTHORITY)
         assertThat(syncAutomatically).isTrue()
-        val periodicSyncs = ContentResolver.getPeriodicSyncs(androidAccount, ArticlesContract.AUTHORITY)
-        assertThat(periodicSyncs).hasSize(2)
-        assertThat(periodicSyncs).containsExactly(periodicFullRefreshSync, periodicRefreshSync)
     }
 }

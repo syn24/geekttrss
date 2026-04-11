@@ -46,7 +46,26 @@
       "Bash(./gradlew :app:generateDebugProto)",
       "Bash(grep -r \"class.*Util\\\\|object.*Util\\\\|fun \" /d/Image/Dev/geekttrss/app/src/main/java/com/geekorum/ttrss -maxdepth 1 --include=\"*.kt\")",
       "Bash(ls:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(xargs echo:*)",
+      "Bash(./gradlew :app:testGoogleDebugUnitTest --tests \"com.geekorum.ttrss.articles_list.ArticlesRepositoryTest\")",
+      "Bash(./gradlew :app:tasks --all)",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.articles_list.ArticlesRepositoryTest\")",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.articles_list.ArticlesViewModelTest\")",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ArticleDetailsViewModelTest\")",
+      "Bash(./gradlew :app:compileDebugAndroidTestKotlin)",
+      "Bash(git status:*)",
+      "Bash(wc:*)",
+      "Read(//c/Users/sandra/.claude/plans/**)",
+      "Read(//c/Users/sandra/.claude/**)",
+      "Bash(./gradlew :app:dependencies --configuration debugAndroidTestRuntimeClasspath)",
+      "Bash(./gradlew :app:connectedDebugAndroidTest --tests \"com.geekorum.ttrss.data.ArticleDaoTest\")",
+      "Bash(./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.geekorum.ttrss.data.ArticleDaoTest)",
+      "Bash(./gradlew :app:connectedDebugAndroidTest)",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest.clickingACardInvokesOnArticleClickWithTheRightArticle\")",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest.clickingACardInvokesOnArticleClickWithTheRightArticle\" --info)",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest\")",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest\" --info)"
     ]
   }
 }

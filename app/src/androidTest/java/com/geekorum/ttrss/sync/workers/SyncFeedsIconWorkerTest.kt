@@ -20,20 +20,26 @@
  */
 package com.geekorum.ttrss.sync.workers
 
-import android.accounts.Account
 import android.app.Application
 import android.content.Context
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
+import androidx.work.workDataOf
 import com.geekorum.ttrss.core.ActualCoroutineDispatchersModule
 import com.geekorum.ttrss.core.CoroutineDispatchersProvider
-import com.geekorum.ttrss.data.*
+import com.geekorum.ttrss.data.ArticlesDatabase
+import com.geekorum.ttrss.data.Category
+import com.geekorum.ttrss.data.DiskDatabaseModule
+import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.network.ApiService
+import com.geekorum.ttrss.network.ServerInfo
 import com.geekorum.ttrss.network.TinyrssApiModule
 import com.geekorum.ttrss.sync.DatabaseService
+import com.geekorum.ttrss.webapi.ApiCallException
 import com.google.common.truth.Truth.assertThat
+import okio.BufferedSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -49,7 +55,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import okio.BufferedSource
 import org.junit.Rule
 import org.junit.Test
 import javax.inject.Inject
@@ -57,21 +62,24 @@ import javax.inject.Singleton
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltAndroidTest
-@UninstallModules(ActualCoroutineDispatchersModule::class,
+@UninstallModules(
+    ActualCoroutineDispatchersModule::class,
     WorkersModule::class,
     TinyrssApiModule::class,
-    DiskDatabaseModule::class)
-class CollectNewArticlesWorkerTest {
-    private lateinit var workerBuilder: TestListenableWorkerBuilder<CollectNewArticlesWorker>
-    private lateinit var apiService: MockApiService
+    DiskDatabaseModule::class,
+)
+class SyncFeedsIconWorkerTest {
 
-    private val testCoroutineDispatcher = StandardTestDispatcher()
+    private lateinit var workerBuilder: TestListenableWorkerBuilder<SyncFeedsIconWorker>
+    private lateinit var apiService: FakeApiService
+
+    private val testDispatcher = StandardTestDispatcher()
 
     @Inject
     lateinit var hiltWorkerFactory: HiltWorkerFactory
+
     @Inject
     lateinit var databaseService: DatabaseService
 
@@ -80,9 +88,11 @@ class CollectNewArticlesWorkerTest {
 
     @JvmField
     @BindValue
-    val dispatchers = CoroutineDispatchersProvider(main = testCoroutineDispatcher,
-        io = testCoroutineDispatcher,
-        computation = testCoroutineDispatcher)
+    val dispatchers = CoroutineDispatchersProvider(
+        main = testDispatcher,
+        io = testDispatcher,
+        computation = testDispatcher,
+    )
 
     @Module(includes = [FakeSyncWorkersModule::class])
     @InstallIn(SingletonComponent::class)
@@ -93,21 +103,23 @@ class CollectNewArticlesWorkerTest {
         @Provides
         @Singleton
         fun providesAppDatabase(application: Application): ArticlesDatabase {
-           return buildInMemoryDatabase(application, dispatchers.io.asExecutor())
+            return buildInMemoryDatabase(application, dispatchers.io.asExecutor())
         }
     }
-
 
     @BeforeTest
     fun setUp() {
         hiltRule.inject()
-        Dispatchers.setMain(testCoroutineDispatcher)
-
-        apiService = MyMockApiService()
+        Dispatchers.setMain(testDispatcher)
+        apiService = FakeApiService()
 
         val applicationContext: Context = ApplicationProvider.getApplicationContext()
         workerBuilder = TestListenableWorkerBuilder(applicationContext)
         workerBuilder.setWorkerFactory(hiltWorkerFactory)
+        workerBuilder.setInputData(workDataOf(
+            BaseSyncWorker.PARAM_ACCOUNT_NAME to "fake",
+            BaseSyncWorker.PARAM_ACCOUNT_TYPE to "fake_type",
+        ))
     }
 
     @AfterTest
@@ -116,34 +128,38 @@ class CollectNewArticlesWorkerTest {
     }
 
     @Test
-    fun testThatNewArticlesArePresentAfterRunningWorker() = runTest {
-        // prepare database
-        databaseService.insertCategories(listOf(Category(id = 1, title = "Dummy category")))
-        databaseService.insertFeeds(listOf(Feed(id =1 , title= "Dummy feed", catId = 1)))
-        // no articles at the beginning
-        assertThat(databaseService.getArticle(1)).isNull()
-
-        val inputData = CollectNewArticlesWorker.getInputData(
-                Account("account", "type"), 1)
-
-        workerBuilder.setInputData(inputData)
+    fun emptyDatabaseReturnsSuccess() = runTest {
+        // No feeds in the DB → synchronizer has nothing to process.
         val worker = workerBuilder.build()
         val result = worker.doWork()
 
         assertThat(result).isEqualTo(ListenableWorker.Result.success())
-        assertThat(databaseService.getArticle(1)).isNotNull()
     }
 
-    private class MyMockApiService : MockApiService() {
+    @Test
+    fun withFeedsStillReturnsSuccessEvenWhenIconLookupFails() = runTest {
+        // Seed a feed — icon lookup will fail (no real network), but the worker should
+        // still return success because per-feed failures are caught inside the synchronizer.
+        databaseService.insertCategories(listOf(Category(id = 1, title = "cat")))
+        databaseService.insertFeeds(
+            listOf(Feed(id = 1, title = "feed", url = "https://example.invalid/rss", catId = 1))
+        )
 
-        override suspend fun getArticles(feedId: Long, sinceId: Long, offset: Int, showExcerpt: Boolean, showContent: Boolean, includeAttachments: Boolean): List<ArticleWithAttachments> {
-            return if (offset == 0) {
-                val article = Article(id = 1, isUnread = true, feedId = 1)
-                listOf(ArticleWithAttachments(article, emptyList()))
-            } else {
-                emptyList()
-            }
+        val worker = workerBuilder.build()
+        val result = worker.doWork()
+
+        assertThat(result).isEqualTo(ListenableWorker.Result.success())
+    }
+
+    private class FakeApiService : MockApiService() {
+        override suspend fun getServerInfo(): ServerInfo =
+            ServerInfo(apiUrl = "https://test.exemple.com/", apiLevel = 20, feedsIconsUrl = null, serverVersion = "1.0")
+
+        override suspend fun getFeedIcon(feedId: Long): BufferedSource {
+            // Throw a checked Exception so FeedIconSynchronizer.dispatchUpdateFeedIcons's
+            // catch(Exception) branch swallows it. Using TODO() would leak a
+            // NotImplementedError (an Error, not an Exception) and fail the test.
+            throw ApiCallException(ApiCallException.ApiError.API_UNKNOWN, "no icon in test")
         }
     }
-
 }

@@ -92,7 +92,7 @@ class SendTransactionsWorkerTest {
 
         @Provides
         @Singleton
-        internal fun providesAppDatabase(application: Application): ArticlesDatabase {
+        fun providesAppDatabase(application: Application): ArticlesDatabase {
             return buildInMemoryDatabase(application, dispatchers.io.asExecutor())
         }
     }

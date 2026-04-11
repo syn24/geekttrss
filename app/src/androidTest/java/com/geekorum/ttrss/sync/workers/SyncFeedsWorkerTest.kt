@@ -27,16 +27,16 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
-import com.geekorum.ttrss.accounts.AndroidTinyrssAccountManager
 import com.geekorum.ttrss.core.ActualCoroutineDispatchersModule
 import com.geekorum.ttrss.core.CoroutineDispatchersProvider
-import com.geekorum.ttrss.data.AccountInfo
 import com.geekorum.ttrss.data.ArticlesDatabase
+import com.geekorum.ttrss.data.Category
 import com.geekorum.ttrss.data.DiskDatabaseModule
+import com.geekorum.ttrss.data.Feed
 import com.geekorum.ttrss.network.ApiService
-import com.geekorum.ttrss.network.ServerInfo
 import com.geekorum.ttrss.network.TinyrssApiModule
 import com.geekorum.ttrss.sync.DatabaseService
+import com.geekorum.ttrss.webapi.ApiCallException
 import com.google.common.truth.Truth.assertThat
 import dagger.Module
 import dagger.Provides
@@ -59,21 +59,25 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import com.geekorum.ttrss.data.Account as DataAccount
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltAndroidTest
-@UninstallModules(ActualCoroutineDispatchersModule::class,
+@UninstallModules(
+    ActualCoroutineDispatchersModule::class,
     WorkersModule::class,
     TinyrssApiModule::class,
-    DiskDatabaseModule::class)
-class UpdateAccountInfoWorkerTest {
-    private lateinit var workerBuilder: TestListenableWorkerBuilder<UpdateAccountInfoWorker>
-    private lateinit var apiService: MyMockApiService
-    private val testCoroutineDispatcher = StandardTestDispatcher()
+    DiskDatabaseModule::class,
+)
+class SyncFeedsWorkerTest {
+
+    private lateinit var workerBuilder: TestListenableWorkerBuilder<SyncFeedsWorker>
+    private lateinit var apiService: FakeApiService
+
+    private val testDispatcher = StandardTestDispatcher()
 
     @Inject
     lateinit var hiltWorkerFactory: HiltWorkerFactory
+
     @Inject
     lateinit var databaseService: DatabaseService
 
@@ -82,9 +86,11 @@ class UpdateAccountInfoWorkerTest {
 
     @JvmField
     @BindValue
-    val dispatchers = CoroutineDispatchersProvider(main = testCoroutineDispatcher,
-        io = testCoroutineDispatcher,
-        computation = testCoroutineDispatcher)
+    val dispatchers = CoroutineDispatchersProvider(
+        main = testDispatcher,
+        io = testDispatcher,
+        computation = testDispatcher,
+    )
 
     @Module(includes = [FakeSyncWorkersModule::class])
     @InstallIn(SingletonComponent::class)
@@ -102,12 +108,16 @@ class UpdateAccountInfoWorkerTest {
     @BeforeTest
     fun setUp() {
         hiltRule.inject()
-        Dispatchers.setMain(testCoroutineDispatcher)
+        Dispatchers.setMain(testDispatcher)
+        apiService = FakeApiService()
 
-        apiService = MyMockApiService()
         val applicationContext: Context = ApplicationProvider.getApplicationContext()
         workerBuilder = TestListenableWorkerBuilder(applicationContext)
         workerBuilder.setWorkerFactory(hiltWorkerFactory)
+        workerBuilder.setInputData(workDataOf(
+            BaseSyncWorker.PARAM_ACCOUNT_NAME to "fake",
+            BaseSyncWorker.PARAM_ACCOUNT_TYPE to "fake_type",
+        ))
     }
 
     @AfterTest
@@ -115,33 +125,82 @@ class UpdateAccountInfoWorkerTest {
         Dispatchers.resetMain()
     }
 
-
     @Test
-    fun testThatAccountInfoAreUpdatedAfterRunningWorker() = runTest {
-        // previous accountInfo
-        assertThat(databaseService.getAccountInfo("account", "https://test.exemple.com"))
-                .isNull()
-
-        val inputData = workDataOf(
-            BaseSyncWorker.PARAM_ACCOUNT_NAME to "account",
-            BaseSyncWorker.PARAM_ACCOUNT_TYPE to AndroidTinyrssAccountManager.ACCOUNT_TYPE
+    fun successfulSyncInsertsCategoriesAndFeeds() = runTest {
+        apiService.categoriesResponse = listOf(
+            Category(id = 1, title = "News")
         )
-        workerBuilder.setInputData(inputData)
+        apiService.feedsResponse = listOf(
+            Feed(id = 10, title = "Feed A", catId = 1),
+            Feed(id = 11, title = "Feed B", catId = 1),
+        )
+
         val worker = workerBuilder.build()
         val result = worker.doWork()
 
         assertThat(result).isEqualTo(ListenableWorker.Result.success())
-        val expected = AccountInfo(account = DataAccount("account", "https://test.exemple.com/"),
-                serverVersion = "2.0",
-                apiLevel = 42)
-        val accountInfo = databaseService.getAccountInfo("account", "https://test.exemple.com/")!!
-        assertThat(accountInfo).isEqualTo(expected)
+        assertThat(databaseService.getFeeds().map { it.id }).containsExactly(10L, 11L)
+        assertThat(databaseService.getCategories().map { it.id }).contains(1L)
     }
 
-    private class MyMockApiService : MockApiService() {
+    @Test
+    fun oldFeedsAreDeletedWhenNotInServerResponse() = runTest {
+        // seed an old feed that the server no longer returns
+        databaseService.insertCategories(listOf(Category(id = 1, title = "News")))
+        databaseService.insertFeeds(listOf(Feed(id = 99, title = "obsolete", catId = 1)))
 
-        override suspend fun getServerInfo(): ServerInfo {
-            return ServerInfo("https://test.exemple.com/",42, "https://test.exemple.com/feeds-icons/", "2.0")
+        apiService.categoriesResponse = listOf(Category(id = 1, title = "News"))
+        apiService.feedsResponse = listOf(Feed(id = 10, title = "current", catId = 1))
+
+        val worker = workerBuilder.build()
+        val result = worker.doWork()
+
+        assertThat(result).isEqualTo(ListenableWorker.Result.success())
+        val remainingIds = databaseService.getFeeds().map { it.id }
+        assertThat(remainingIds).contains(10L)
+        assertThat(remainingIds).doesNotContain(99L)
+    }
+
+    @Test
+    fun virtualCategoriesWithNegativeIdsAreSkipped() = runTest {
+        // Virtual categories (id < 0) should not be inserted
+        apiService.categoriesResponse = listOf(
+            Category(id = -1, title = "Uncategorized"),
+            Category(id = 1, title = "Real"),
+        )
+        apiService.feedsResponse = emptyList()
+
+        val worker = workerBuilder.build()
+        worker.doWork()
+
+        val ids = databaseService.getCategories().map { it.id }
+        assertThat(ids).contains(1L)
+        assertThat(ids).doesNotContain(-1L)
+    }
+
+    @Test
+    fun apiFailureReturnsResultFailure() = runTest {
+        apiService.shouldThrow = true
+
+        val worker = workerBuilder.build()
+        val result = worker.doWork()
+
+        assertThat(result).isEqualTo(ListenableWorker.Result.failure())
+    }
+
+    private class FakeApiService : MockApiService() {
+        var categoriesResponse: List<Category> = emptyList()
+        var feedsResponse: List<Feed> = emptyList()
+        var shouldThrow: Boolean = false
+
+        override suspend fun getCategories(): List<Category> {
+            if (shouldThrow) throw ApiCallException(ApiCallException.ApiError.API_UNKNOWN, "boom")
+            return categoriesResponse
+        }
+
+        override suspend fun getFeeds(): List<Feed> {
+            if (shouldThrow) throw ApiCallException(ApiCallException.ApiError.API_UNKNOWN, "boom")
+            return feedsResponse
         }
     }
 }

@@ -69,13 +69,82 @@ Just use Gradle to build
 
 Test instructions
 =============================
+# All tests: 
+
+gradlew :app:testDebugUnitTest :app:connectedDebugAndroidTest
+gradlew testDebugUnitTest connectedDebugAndroidTest
+
+- With :app: — runs only that task in the :app module. Faster, targeted.
+- Without :app: — Gradle runs the task in every module that has it. In this project that would include :webapi, :htmlparsers, :faviKonSnoop if they define testDebugUnitTest. Slower but more thorough.
+
+For day-to-day work you almost always want the :app: prefix since that's where all the code you're touching lives. The bare form is more useful in CI where you want everything verified.
 
 # Einzelnen Test ausführen
-gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testLogin"
+gradlew :app:testDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testLogin"
 
 # Performance-Benchmark ausführen
-gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testPerformanceBenchmark"
+gradlew :app:testFreeUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testPerformanceBenchmark"
 
 # Alle Integrationstests ausführen
-gradlew :app:testFreeDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest"
+gradlew :app:testDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest"
+
+1. Run every instrumented test in one shot
+
+gradlew :app:connectedDebugAndroidTest
+
+This runs all of androidTest/ — including the 35 new tests plus any pre-existing ones (ArticleFullTextSearchTest, CollectNewArticlesWorkerTest, etc.). Expect 5-15 minutes on first run because Hilt generates a lot of test components.
+
+2. Run a single test class
+
+AGP supports the --tests filter on connectedDebugAndroidTest (AGP 9.1.0):
+
+gradlew :app:connectedDebugAndroidTest --tests "com.geekorum.ttrss.data.ArticleDaoTest"
+gradlew :app:connectedDebugAndroidTest --tests "com.geekorum.ttrss.sync.workers.SyncFeedsWorkerTest"
+gradlew :app:connectedDebugAndroidTest --tests "com.geekorum.ttrss.sync.workers.SyncFeedsIconWorkerTest"
+gradlew :app:connectedDebugAndroidTest --tests "com.geekorum.ttrss.sync.workers.PeriodicRefreshWorkerTest"
+gradlew :app:connectedDebugAndroidTest --tests "com.geekorum.ttrss.background_job.BackgroundJobManagerTest"
+
+3. Run a single test method
+
+gradlew :app:connectedDebugAndroidTest --tests "com.geekorum.ttrss.background_job.BackgroundJobManagerTest.refreshFeedEnqueuesUniqueWorkWithExpectedName"
+
+4. Run the whole "new Phase 3+4 worker batch"
+
+gradlew :app:connectedDebugAndroidTest \
+--tests "com.geekorum.ttrss.sync.workers.*" \
+--tests "com.geekorum.ttrss.background_job.*"
+
+The filter accepts glob patterns so multiple --tests flags stack.
+
+5. Where to find results
+
+- HTML report: app/build/reports/androidTests/connected/debug/index.html — open in a browser, click through failures to see stack traces
+- XML (CI-friendly): app/build/outputs/androidTest-results/connected/debug/
+- Logcat from the run: app/build/outputs/androidTest-results/connected/debug/logcat-*.txt
+
+6. Useful flags
+
+# Stream test names as they run (nice for long runs)
+./gradlew :app:connectedDebugAndroidTest -i
+
+# Force reinstall of the test APK (rarely needed, but useful if you see "process crashed")
+./gradlew :app:connectedDebugAndroidTest --rerun-tasks
+
+# If the daemon misbehaves after a WHPX recovery
+./gradlew --stop && ./gradlew :app:connectedDebugAndroidTest
+
+7. The unit-test counterpart (no emulator)
+
+For comparison — the ~49 Robolectric/JVM tests from Phases 1.1, 2.1, 2.2, 5 run without any device:
+
+./gradlew :app:testDebugUnitTest
+./gradlew :app:testDebugUnitTest --tests "com.geekorum.ttrss.article_details.ReadMoreSectionTest"
+
+Those hit app/build/reports/tests/testDebugUnitTest/index.html instead.
+
+Gotcha to watch for
+
+The BackgroundJobManagerTest tests that call refreshFeed(..., feedId = 42) use ExistingWorkPolicy.KEEP under the hood, so if you run the test twice back-to-back against the same emulator without a clean WorkManager DB, refreshFeed-7 and refreshFeed-42 entries could survive across runs and affect assertions. The WorkManager test harness resets state per JVM process, so a clean ./gradlew invocation is always fine
+— but if you use Android Studio's "rerun failed" repeatedly, wipe the emulator's app data once: adb shell pm clear com.geekorum.geekttrss.
+
 

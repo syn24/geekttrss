@@ -140,6 +140,14 @@ androidComponents {
     }
 }
 
+// Exclude the obsolete `protobuf-lite` artifact (last version 3.0.1) pulled in
+// transitively by accessibility-test-framework via espresso. It ships an old
+// GeneratedMessageLite that is missing `registerDefaultInstance(Class, GeneratedMessageLite)`
+// and clashes with protobuf-javalite 4.x at runtime, crashing proto <clinit>.
+configurations.configureEach {
+    exclude(group = "com.google.protobuf", module = "protobuf-lite")
+}
+
 dependencies {
 
     implementation(libs.androidx.core)

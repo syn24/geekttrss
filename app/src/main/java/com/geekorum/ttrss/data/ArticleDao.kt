@@ -48,9 +48,22 @@ interface ArticleDao {
     @Transaction
     fun getAllUnreadArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
-    @Query("SELECT * FROM articles WHERE unread=1 ORDER BY RANDOM() LIMIT :count")
+    // Room's generated code for `@Relation` queries steps the cursor twice — once to
+    // collect parent keys, once to build rows. With `ORDER BY RANDOM()` the two passes
+    // see different rows, so relation lookups fail. Fetch IDs first, then resolve the
+    // relation with a stable `IN (...)` query.
+    @Query("SELECT _id FROM articles WHERE unread=1 ORDER BY RANDOM() LIMIT :count")
+    suspend fun getUnreadArticleIdsRandomized(count: Int): List<Long>
+
+    @Query("SELECT * FROM articles WHERE _id IN (:ids)")
     @Transaction
-    suspend fun getUnreadArticlesRandomized(count: Int): List<ArticleWithFeed>
+    suspend fun getArticlesWithFeedByIds(ids: List<Long>): List<ArticleWithFeed>
+
+    suspend fun getUnreadArticlesRandomized(count: Int): List<ArticleWithFeed> {
+        val ids = getUnreadArticleIdsRandomized(count)
+        if (ids.isEmpty()) return emptyList()
+        return getArticlesWithFeedByIds(ids)
+    }
 
     @Query("SELECT * FROM articles WHERE feed_id=:feedId AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
