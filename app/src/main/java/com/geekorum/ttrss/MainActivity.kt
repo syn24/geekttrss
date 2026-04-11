@@ -33,8 +33,6 @@ import com.geekorum.ttrss.core.BaseActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
-private val UseSingleActivity = false
-
 @AndroidEntryPoint
 class MainActivity : BaseActivity() {
 
@@ -46,10 +44,7 @@ class MainActivity : BaseActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {  // CREATED → STARTED
                 accountViewModel.selectedAccount.collect { account ->
                     if (account != null) {
-                        val intent = if (UseSingleActivity)
-                            Intent(this@MainActivity, SingleActivity::class.java)
-                        else
-                            Intent(this@MainActivity, ArticleListActivity::class.java)
+                        val intent = Intent(this@MainActivity, ArticleListActivity::class.java)
                         startActivity(intent)
                         finish()
                         // Cancel this coroutine after starting new activity

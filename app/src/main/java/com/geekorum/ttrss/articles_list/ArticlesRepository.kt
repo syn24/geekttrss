@@ -61,17 +61,8 @@ class ArticlesRepository
     fun getAllPublishedArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllPublishedArticles()
     fun getAllPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllPublishedArticlesOldestFirst()
 
-    fun getAllUnreadPublishedArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadPublishedArticles()
-    fun getAllUnreadPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadPublishedArticlesOldestFirst()
-
     fun getAllStarredArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllStarredArticles()
     fun getAllStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllStarredArticlesOldestFirst()
-
-    fun getAllUnreadStarredArticles(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadStarredArticles()
-    fun getAllUnreadStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadStarredArticlesOldestFirst()
-
-    fun getAllArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesForFeed(feedId)
-    fun getAllArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllArticlesForFeedOldestFirst(feedId)
 
     fun getAllUnreadArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesForFeed(feedId)
     fun getAllUnreadArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>> = articleDao.getAllUnreadArticlesForFeedOldestFirst(feedId)
@@ -96,10 +87,6 @@ class ArticlesRepository
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getArticleById(articleId: Long): Flow<Article?> = articleDao.getArticleById(articleId).distinctUntilChanged()
-
-    fun getArticlesById(articleIds: List<Long>): PagingSource<Int, ArticleWithFeed> {
-        return articleDao.getArticlesById(articleIds)
-    }
 
     suspend fun setArticleUnread(articleId: Long, newValue: Boolean) {
         articleDao.updateArticleUnread(articleId, newValue)

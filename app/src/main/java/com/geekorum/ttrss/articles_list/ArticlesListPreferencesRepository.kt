@@ -55,7 +55,7 @@ class ArticlesListPreferencesRepository @Inject constructor(
     fun getViewMode(): Flow<String> {
         return callbackFlow {
             val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                if (key == PREF_SORT_ORDER) {
+                if (key == PREF_VIEW_MODE) {
                     trySendBlocking(prefs.getString(PREF_VIEW_MODE, "adaptive")!!)
                 }
             }

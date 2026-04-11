@@ -20,10 +20,6 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Picasso contains Downloader with okhttp2 but we use okhttp3
--dontwarn com.squareup.okhttp.*
--dontnote com.squareup.okhttp.*
-
 # Dagger-android has errorprone annotations
 -dontwarn com.google.errorprone.annotations.*
 

@@ -22,7 +22,7 @@
 
 -->
 <resources>
-    <drawable name="ic_launcher_round">@mipmap/ic_launcher_round</drawable>
+    <drawable name="ic_launcher_round">@mipmap/ic_launcher</drawable>
     <!-- just a small alias to replace all the ttrss share icon -->
     <integer name="star_fill_time">@android:integer/config_mediumAnimTime</integer>
 </resources>

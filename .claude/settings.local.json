@@ -43,7 +43,10 @@
       "Bash(./gradlew clean:*)",
       "Bash(./gradlew :app:sourceSets)",
       "Bash(./gradlew :app:sourceSets --all)",
-      "Bash(./gradlew :app:generateDebugProto)"
+      "Bash(./gradlew :app:generateDebugProto)",
+      "Bash(grep -r \"class.*Util\\\\|object.*Util\\\\|fun \" /d/Image/Dev/geekttrss/app/src/main/java/com/geekorum/ttrss -maxdepth 1 --include=\"*.kt\")",
+      "Bash(ls:*)",
+      "Bash(grep:*)"
     ]
   }
 }

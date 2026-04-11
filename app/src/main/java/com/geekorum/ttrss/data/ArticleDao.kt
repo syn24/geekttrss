@@ -34,10 +34,6 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE _id=:id")
     fun getArticleById(id: Long): Flow<Article?>
 
-    @Query("SELECT * FROM articles WHERE _id IN (:articleIds)")
-    @Transaction
-    fun getArticlesById(articleIds: List<Long>): PagingSource<Int, ArticleWithFeed>
-
     @Query("SELECT * FROM articles ORDER BY last_time_update DESC")
     @Transaction
     fun getAllArticles(): Flow<List<ArticleWithFeed>>
@@ -55,13 +51,6 @@ interface ArticleDao {
     @Query("SELECT * FROM articles WHERE unread=1 ORDER BY RANDOM() LIMIT :count")
     @Transaction
     suspend fun getUnreadArticlesRandomized(count: Int): List<ArticleWithFeed>
-
-    @Query("SELECT * FROM articles WHERE feed_id=:feedId ORDER BY last_time_update DESC ")
-    @Transaction
-    fun getAllArticlesForFeed(feedId: Long): Flow<List<ArticleWithFeed>>
-    @Query("SELECT * FROM articles WHERE feed_id=:feedId ORDER BY last_time_update")
-    @Transaction
-    fun getAllArticlesForFeedOldestFirst(feedId: Long): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE feed_id=:feedId AND unread=1 ORDER BY last_time_update DESC")
     @Transaction
@@ -104,26 +93,12 @@ interface ArticleDao {
     @Transaction
     fun getAllStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
-    @Query("SELECT * FROM articles WHERE marked=1 AND unread=1 ORDER BY last_time_update DESC")
-    @Transaction
-    fun getAllUnreadStarredArticles(): Flow<List<ArticleWithFeed>>
-    @Query("SELECT * FROM articles WHERE marked=1 AND unread=1 ORDER BY last_time_update")
-    @Transaction
-    fun getAllUnreadStarredArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
-
     @Query("SELECT * FROM articles WHERE published=1 ORDER BY last_time_update DESC")
     @Transaction
     fun getAllPublishedArticles(): Flow<List<ArticleWithFeed>>
     @Query("SELECT * FROM articles WHERE published=1 ORDER BY last_time_update")
     @Transaction
     fun getAllPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
-
-    @Query("SELECT * FROM articles WHERE published=1 AND unread=1 ORDER BY last_time_update DESC")
-    @Transaction
-    fun getAllUnreadPublishedArticles(): Flow<List<ArticleWithFeed>>
-    @Query("SELECT * FROM articles WHERE published=1 AND unread=1 ORDER BY last_time_update")
-    @Transaction
-    fun getAllUnreadPublishedArticlesOldestFirst(): Flow<List<ArticleWithFeed>>
 
     @Query("SELECT * FROM articles WHERE last_time_update>=:time AND unread=1 ORDER BY last_time_update DESC")
     @Transaction

@@ -25,7 +25,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.geekorum.ttrss.data.ArticleDao
@@ -77,18 +76,16 @@ class BadgeManager @Inject constructor(
     }
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                application.getString(R.string.notif_channel_badge_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                setSound(null, null)
-                enableVibration(false)
-                setShowBadge(true)
-            }
-            notificationManager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            application.getString(R.string.notif_channel_badge_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            setSound(null, null)
+            enableVibration(false)
+            setShowBadge(true)
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun updateBadge(count: Int) {
