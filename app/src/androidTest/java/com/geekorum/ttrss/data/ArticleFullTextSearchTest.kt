@@ -132,6 +132,7 @@ class ArticleFullTextSearchTest {
     }
 
 
+    @Suppress("DEPRECATION")
     private fun createSomeArticles(db: SupportSQLiteDatabase) {
         var values = contentValuesOf(
             ArticlesContract.Category._ID to 0,

@@ -20,4 +20,12 @@
  */
 package com.geekorum.build
 
+plugins {
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
 configureTests()

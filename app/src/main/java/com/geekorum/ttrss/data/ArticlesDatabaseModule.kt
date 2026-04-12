@@ -87,7 +87,7 @@ object DiskDatabaseModule {
     @Singleton
     fun providesAppDatabase(application: Application?): ArticlesDatabase {
         return Room.databaseBuilder(application!!, ArticlesDatabase::class.java, ArticlesDatabase.DATABASE_NAME)
-            .fallbackToDestructiveMigrationOnDowngrade()
+            .fallbackToDestructiveMigrationOnDowngrade(true)
             .addMigrations(*ALL_MIGRATIONS.toTypedArray())
             .build()
     }

@@ -173,6 +173,7 @@ data class ListResponsePayload<T>(
 
     @Transient
     val result: List<T>
+        @Suppress("UNCHECKED_CAST")
         get() = (content as? ListContent<T>)?.list ?: emptyList()
 
     internal class OwnSerializer<E>(

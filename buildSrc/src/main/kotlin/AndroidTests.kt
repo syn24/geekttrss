@@ -20,7 +20,7 @@
  */
 package com.geekorum.build
 
-import com.android.build.gradle.TestedExtension
+import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.DependencyConstraint
@@ -38,16 +38,20 @@ const val robolectricVersion = "4.14.1"
  * Configuration for espresso and robolectric usage in an Android project
  */
 internal fun Project.configureTests() {
-    extensions.configure<TestedExtension>("android") {
-        defaultConfig {
+    extensions.configure<CommonExtension>("android") {
+        with(defaultConfig) {
             testInstrumentationRunner = "com.geekorum.ttrss.HiltRunner"
+            // clearPackageData must be disabled when collecting coverage because Orchestrator
+            // wipes the app data directory (including the JaCoCo .ec file) between each test.
+            // Pass -Pcoverage to disable it: ./gradlew connectedDebugAndroidTest -Pcoverage
+            val clearPackageData = if (project.hasProperty("coverage")) "false" else "true"
             testInstrumentationRunnerArguments += mapOf(
-                "clearPackageData" to "true",
+                "clearPackageData" to clearPackageData,
                 "disableAnalytics" to "true"
             )
         }
 
-        testOptions {
+        with(testOptions) {
             execution = "ANDROIDX_TEST_ORCHESTRATOR"
             animationsDisabled = true
 

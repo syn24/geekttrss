@@ -132,7 +132,7 @@ internal fun buildInMemoryDatabase(application: Application,
      * https://issuetracker.google.com/issues/135334849
      */
     return Room.inMemoryDatabaseBuilder(application, ArticlesDatabase::class.java)
-        .fallbackToDestructiveMigrationOnDowngrade()
+        .fallbackToDestructiveMigrationOnDowngrade(true)
         .setQueryExecutor(queryExecutor)
         .setTransactionExecutor(transactionExecutor)
         .addMigrations(*ALL_MIGRATIONS.toTypedArray())

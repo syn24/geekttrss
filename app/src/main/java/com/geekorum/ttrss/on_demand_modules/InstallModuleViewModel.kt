@@ -50,7 +50,7 @@ class InstallModuleViewModel @Inject constructor(
 ) : ViewModel() {
 
     data class InstallProgression(
-        @StringRes
+        @param:StringRes
         val message: Int,
         val progress: Int,
         val max: Int,

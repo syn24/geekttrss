@@ -31,6 +31,8 @@ import com.geekorum.ttrss.data.ArticlesDatabase
 import com.geekorum.ttrss.data.ArticlesDatabase.Tables
 import com.geekorum.ttrss.providers.ArticlesContract
 import com.google.common.truth.Truth.assertThat
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Rule
 import org.junit.runner.RunWith
 import kotlin.test.Test
@@ -40,10 +42,14 @@ private const val TEST_DB = "migration-test"
 /**
  * Testsuite for [ArticlesDatabase] migrations.
  */
+@HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class ArticlesDatabaseMigrationTest {
 
-    @get:Rule
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
     var helper: MigrationTestHelper = MigrationTestHelper(
         InstrumentationRegistry.getInstrumentation(),
         ArticlesDatabase::class.java,
@@ -68,6 +74,7 @@ class ArticlesDatabaseMigrationTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun createSomeArticles(db: SupportSQLiteDatabase) {
         var values = contentValuesOf(
             ArticlesContract.Category.TITLE to "category",
@@ -260,6 +267,7 @@ class ArticlesDatabaseMigrationTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun createSomeArticlesFromVersion8(db: SupportSQLiteDatabase) {
         var values = contentValuesOf(
             ArticlesContract.Category.TITLE to "category",
@@ -343,6 +351,7 @@ class ArticlesDatabaseMigrationTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun createSomeArticlesFromVersion10(db: SupportSQLiteDatabase) {
         var values = contentValuesOf(
                 ArticlesContract.Category.TITLE to "category",

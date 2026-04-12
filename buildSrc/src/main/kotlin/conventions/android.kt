@@ -20,12 +20,12 @@
  */
 package com.geekorum.build.conventions
 
-import com.android.build.gradle.BaseExtension
+import com.android.build.api.dsl.CommonExtension
 import com.geekorum.build.configureAnnotationProcessorDeps
 import com.geekorum.build.createComponentsPlatforms
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.configure
 
 fun Project.conventionForAndroidProject() {
     conventionForKotlinProject()
@@ -36,9 +36,9 @@ fun Project.conventionForAndroidProject() {
     configureAnnotationProcessorDeps()
 
 
-    extensions.findByType<BaseExtension>()?.apply {
-        setCompileSdkVersion(36)
-        defaultConfig {
+    extensions.configure<CommonExtension>("android") {
+        compileSdk = 36
+        defaultConfig.apply {
             minSdk = 28
         }
     }

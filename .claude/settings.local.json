@@ -65,7 +65,14 @@
       "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest.clickingACardInvokesOnArticleClickWithTheRightArticle\")",
       "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest.clickingACardInvokesOnArticleClickWithTheRightArticle\" --info)",
       "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest\")",
-      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest\" --info)"
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"com.geekorum.ttrss.article_details.ReadMoreSectionTest\" --info)",
+      "Read(//mnt/d/Image/Dev/**)",
+      "Bash(./gradlew :app:tasks --group Reporting)",
+      "Bash(./gradlew :app:testDebugCoverageReport)",
+      "Bash(./gradlew :app:testDebugUnitTest --info)",
+      "Bash(./gradlew :app:packageDebugUnitTestForUnitTest --info)",
+      "Bash(./gradlew :app:testDebugUnitTest --debug)",
+      "Bash(./gradlew :buildSrc:compileKotlin)"
     ]
   }
 }

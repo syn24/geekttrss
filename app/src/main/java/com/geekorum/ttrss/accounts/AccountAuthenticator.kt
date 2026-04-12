@@ -48,7 +48,7 @@ import javax.inject.Inject
 
 class AccountAuthenticator @Inject
 internal constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val dispatchers: CoroutineDispatchersProvider,
     private val accountManager: AndroidTinyrssAccountManager,
     private val backgroundJobManager: BackgroundJobManager,

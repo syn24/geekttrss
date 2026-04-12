@@ -255,6 +255,7 @@ class ArticleDaoTest {
         )
     }
 
+    @Suppress("DEPRECATION")
     private fun insertArticle(
         db: SupportSQLiteDatabase,
         id: Long,

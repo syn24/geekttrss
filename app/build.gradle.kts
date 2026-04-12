@@ -67,6 +67,10 @@ android {
     }
 
     buildTypes {
+        named("debug") {
+            enableAndroidTestCoverage = true
+            // Do NOT set enableUnitTestCoverage — the jacoco plugin handles JVM tests
+        }
         named("release") {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -279,3 +283,71 @@ dependencies {
     coreLibraryDesugaring(libs.android.desugar.jdk)
 }
 
+// ---------------------------------------------------------------------------
+// Code coverage
+// ---------------------------------------------------------------------------
+
+val coverageExcludes = listOf(
+    // Hilt generated
+    "**/Hilt_*.class", "**/*_HiltModules*.class", "**/*_ComponentTreeDeps.class",
+    "**/*_GeneratedInjector.class", "**/*_MembersInjector.class",
+    // Dagger generated
+    "**/*_Factory.class", "**/*_Factory\$*.class", "**/Dagger*.class",
+    "**/*Module_Provides*.class", "**/*Module_Binds*.class",
+    // Room generated
+    "**/*Dao_Impl.class", "**/*Dao_Impl\$*.class", "**/*_Database_Impl.class",
+    // Compose compiler generated
+    "**/ComposableSingletons\$*.class",
+    // Android boilerplate
+    "**/BuildConfig.class", "**/R.class", "**/R\$*.class",
+)
+
+// Shared helper to configure class/source dirs (avoids duplication between tasks).
+// Uses the post-ASM-transform runtime jar — that is the jar loaded by the JVM test
+// process, so its class IDs match what JaCoCo records in the exec file.
+fun JacocoReport.configureClassAndSourceDirs() {
+    classDirectories.setFrom(
+        zipTree(layout.buildDirectory.file(
+            "intermediates/runtime_app_classes_jar/debug/bundleDebugClassesToRuntimeJar/classes.jar"
+        )).matching { exclude(coverageExcludes) }
+    )
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+}
+
+// JVM unit-test coverage report
+// Run: ./gradlew :app:testDebugCoverageReport
+// Output: app/build/reports/jacoco/testDebugCoverageReport/html/index.html
+tasks.register<JacocoReport>("testDebugCoverageReport") {
+    group = "Reporting"
+    description = "JaCoCo coverage report for debug JVM unit tests"
+    dependsOn("testDebugUnitTest")
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    executionData.setFrom(
+        layout.buildDirectory.file("jacoco/testDebugUnitTest.exec")
+    )
+    configureClassAndSourceDirs()
+}
+
+// Combined report (JVM + instrumented)
+// Run connectedDebugAndroidTest first, then:
+// ./gradlew :app:jacocoCombinedReport
+// Output: app/build/reports/jacoco/jacocoCombinedReport/html/index.html
+tasks.register<JacocoReport>("jacocoCombinedReport") {
+    group = "Reporting"
+    description = "Merged JVM + instrumented coverage (run connectedDebugAndroidTest first)"
+    dependsOn("testDebugUnitTest")
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("jacoco/testDebugUnitTest.exec")
+            include("outputs/code_coverage/debugAndroidTest/connected/**/*.ec")
+        }
+    )
+    configureClassAndSourceDirs()
+}

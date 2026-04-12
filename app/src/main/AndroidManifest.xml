@@ -31,9 +31,6 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <!-- AGP 7.0 seems to have a bug who makes it ignores targetSdkVersion for manifest of variant (debug/release) -->
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove" />
-
     <queries>
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService" />
@@ -150,7 +147,11 @@
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <!-- Remove WorkManagerInitializer and initialize manually in Application -->
+            <!-- Remove WorkManagerInitializer and initialize manually in Application.
+                 Note: processDebugUnitTestManifest warns "no other declaration present" because
+                 App Startup's library manifest is not included in JVM unit test manifest
+                 processing. The warning is harmless — the remove correctly takes effect in
+                 the actual debug APK manifest. -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"

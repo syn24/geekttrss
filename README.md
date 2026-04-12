@@ -71,6 +71,7 @@ Test instructions
 =============================
 # All tests: 
 
+Run TestSetup emulator and then run Tests:
 gradlew :app:testDebugUnitTest :app:connectedDebugAndroidTest
 gradlew testDebugUnitTest connectedDebugAndroidTest
 
@@ -78,6 +79,23 @@ gradlew testDebugUnitTest connectedDebugAndroidTest
 - Without :app: — Gradle runs the task in every module that has it. In this project that would include :webapi, :htmlparsers, :faviKonSnoop if they define testDebugUnitTest. Slower but more thorough.
 
 For day-to-day work you almost always want the :app: prefix since that's where all the code you're touching lives. The bare form is more useful in CI where you want everything verified.
+
+# Coverage Report
+# JVM unit test coverage (~5% of classes)
+gradlew :app:testDebugCoverageReport
+# → app/build/reports/jacoco/testDebugCoverageReport/html/index.html
+
+# Instrumented test coverage (requires emulator)
+gradlew :app:connectedDebugAndroidTest -Pcoverage
+# → app/build/reports/coverage/androidTest/debug/connected/index.html
+
+# Combined (run both above first)
+gradlew :app:jacocoCombinedReport
+# → app/build/reports/jacoco/jacocoCombinedReport/html/index.html
+in cmd: start D:\Image\Dev\geekttrss\app\build\reports\jacoco\jacocoCombinedReport\html\index.html
+
+
+
 
 # Einzelnen Test ausführen
 gradlew :app:testDebugUnitTest --tests "com.geekorum.ttrss.network.RealServerIntegrationTest.testLogin"

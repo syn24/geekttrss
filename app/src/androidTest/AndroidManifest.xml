@@ -16,10 +16,7 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
-    <application>
-        <service android:name="com.geekorum.ttrss.accounts.AuthenticatorService"
-                 tools:node="remove"/>
-        <service android:name="com.geekorum.ttrss.sync.ArticleSyncService"
-                 tools:node="remove"/>
-    </application>
+    <!-- No application overrides needed: AGP 9.x does not include app services in the
+         test APK manifest, so AuthenticatorService and ArticleSyncService are absent
+         from the test APK and cannot be bound by the system during tests. -->
 </manifest>
